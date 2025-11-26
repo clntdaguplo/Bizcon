@@ -7,11 +7,32 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultantProfileController;
 use App\Http\Controllers\AdminConsultantController;
+use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\CustomerConsultantController;
+use App\Http\Controllers\CustomerProfileController;
 
 // Public pages
 Route::get('/', fn() => view('home'))->name('home');
-Route::get('/about', fn() => view('about'))->name('about');
-Route::get('/services', fn() => view('services'))->name('services');
+Route::get('/about', fn() => redirect('/#about'))->name('about');
+Route::get('/services', fn() => redirect('/#services'))->name('services');
+
+// Public consultants page
+Route::get('/consultants', function() {
+    $query = request('q');
+    $consultants = \App\Models\ConsultantProfile::with('user')
+        ->where('is_verified', true)
+        ->when($query, function($q) use ($query) {
+            $normalized = mb_strtolower($query);
+            $q->where(function($sub) use ($normalized, $query) {
+                $sub->whereRaw('LOWER(expertise) = ?', [$normalized])
+                    ->orWhere('full_name', 'like', "%".$query."%");
+            });
+        })
+        ->orderByDesc('updated_at')
+        ->paginate(12)
+        ->appends(['q' => $query]);
+    return view('consultants', compact('consultants', 'query'));
+})->name('consultants');
 
 // Signup routes
 Route::get('/signup', [SignupController::class, 'show'])->name('signup');
@@ -44,6 +65,43 @@ Route::middleware(['auth'])->group(function () {
 // Role-protected dashboards
 Route::middleware(['auth', 'role:Customer'])->group(function () {
     Route::get('/dashboard/customer', [DashboardController::class, 'customer'])->name('dashboard.customer');
+    // Friendly aliases per request
+    Route::get('/customer/dashboard', [DashboardController::class, 'customer'])->name('customer.dashboard');
+    // Customer dashboard subpages
+    Route::get('/customer/new-consult', function() {
+        $selectedConsultant = null;
+        if (request()->filled('consultant')) {
+            $selectedConsultant = \App\Models\ConsultantProfile::where('is_verified', true)
+                ->with('user')
+                ->find(request('consultant'));
+        }
+        return view('customer-folder.new-consult', compact('selectedConsultant'));
+    })->name('customer.new-consult');
+    Route::get('/customer/new_consult', function() {
+        return view('customer-folder.new-consult');
+    })->name('customer.new_consult');
+
+    Route::post('/customer/new-consult', [ConsultationController::class, 'store'])->name('customer.consultations.store');
+
+    Route::get('/customer/my-consults', function() {
+        return view('customer-folder.my-consults');
+    })->name('customer.my-consults');
+    Route::get('/customer/my_consults', function() {
+        return view('customer-folder.my-consults');
+    })->name('customer.my_consults');
+
+    Route::get('/customer/profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
+    Route::put('/customer/profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+
+    // Customers: see all consultants (verified only)
+    Route::get('/customer/consultants', [CustomerConsultantController::class, 'index'])->name('customer.consultants');
+    
+    // API endpoints for consultants
+    Route::get('/customer/consultants/api/all', [CustomerConsultantController::class, 'getAllConsultants'])->name('customer.consultants.api.all');
+    Route::get('/customer/consultants/api/stats', [CustomerConsultantController::class, 'getStats'])->name('customer.consultants.api.stats');
+
+    // Shortcut: click Request on a consultant card to open prefilled form
+    Route::get('/customer/consultants/{id}/request', [CustomerConsultantController::class, 'requestConsultation'])->name('customer.consultants.request');
 });
 Route::middleware(['auth', 'role:Consultant'])->group(function () {
     Route::get('/dashboard/consultant', [DashboardController::class, 'consultant'])->name('dashboard.consultant');
@@ -51,6 +109,33 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     Route::post('/consultant/rules', [ConsultantProfileController::class, 'acceptRules'])->name('consultant.rules.accept');
     Route::get('/consultant/profile', [ConsultantProfileController::class, 'profile'])->name('consultant.profile');
     Route::post('/consultant/profile', [ConsultantProfileController::class, 'saveProfile'])->name('consultant.profile.save');
+
+    // Consultant: inbox of consultation requests
+    Route::get('/consultant/consultations', [ConsultationController::class, 'consultantInbox'])->name('consultant.consultations');
+    
+    // New consultant pages
+    Route::get('/consultant/respond', function() {
+        $profile = \App\Models\ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        $pending_consultations = \App\Models\Consultation::with('customer')
+            ->where('consultant_profile_id', $profile->id)
+            ->where('status', 'Pending')
+            ->orderByDesc('created_at')
+            ->get();
+        return view('consultant-folder.respond', compact('pending_consultations'));
+    })->name('consultant.respond');
+    
+    Route::get('/consultant/profile/manage', function() {
+        $profile = \App\Models\ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        return view('consultant-folder.profile', compact('profile'));
+    })->name('consultant.profile.manage');
+    
+    Route::put('/consultant/profile/update', [ConsultantProfileController::class, 'updateProfile'])->name('consultant.profile.update');
+    
+    // Consultation response actions
+    Route::post('/consultant/consultations/{id}/accept', [ConsultationController::class, 'acceptConsultation'])->name('consultant.consultations.accept');
+    Route::post('/consultant/consultations/{id}/reject', [ConsultationController::class, 'rejectConsultation'])->name('consultant.consultations.reject');
+    Route::post('/consultant/consultations/{id}/complete', [ConsultationController::class, 'completeConsultation'])->name('consultant.consultations.complete');
+    Route::post('/consultant/consultations/{id}/respond', [ConsultationController::class, 'respondToConsultation'])->name('consultant.consultations.respond');
 });
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin');
@@ -58,11 +143,12 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::post('/admin/consultants/{id}/approve', [AdminConsultantController::class, 'approve'])->name('admin.consultants.approve');
     Route::post('/admin/consultants/{id}/reject', [AdminConsultantController::class, 'reject'])->name('admin.consultants.reject');
     Route::get('/admin/consultants', [AdminConsultantController::class, 'consultants'])->name('admin.consultants');
+    Route::get('/admin/consultants/{id}', [AdminConsultantController::class, 'show'])->name('admin.consultants.show');
     Route::get('/admin/customers', [AdminConsultantController::class, 'customers'])->name('admin.customers');
     
     // New admin pages
     Route::get('/admin/manage-users', function() {
-        $consultants = \App\Models\ConsultantProfile::with('user')->get();
+        $consultants = \App\Models\ConsultantProfile::with('user')->where('is_verified', true)->get();
         $customers = \App\Models\User::where('role', 'Customer')->get();
         $pending = \App\Models\ConsultantProfile::where('is_verified', false)->where('is_rejected', false)->get();
         
@@ -70,11 +156,18 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     })->name('admin.manage-users');
     
     Route::get('/admin/consultations', function() {
-        return view('admin-folder.consultations');
+        $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])
+            ->orderByDesc('created_at')
+            ->get();
+        return view('admin-folder.consultations', compact('consultations'));
     })->name('admin.consultations');
     
     Route::get('/admin/reports', function() {
-        return view('admin-folder.reports');
+        $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])->get();
+        $consultants = \App\Models\ConsultantProfile::where('is_verified', true)->with('user')->get();
+        $customers = \App\Models\User::where('role', 'Customer')->get();
+        
+        return view('admin-folder.reports', compact('consultations', 'consultants', 'customers'));
     })->name('admin.reports');
     
     Route::get('/admin/settings', function() {

@@ -151,7 +151,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-900">View</button>
+                                    <a href="{{ route('admin.consultants.show', $consultant->id) }}" class="text-blue-600 hover:text-blue-900">View</a>
                                     @if(!$consultant->is_verified)
                                         <button class="text-green-600 hover:text-green-900">Approve</button>
                                     @endif

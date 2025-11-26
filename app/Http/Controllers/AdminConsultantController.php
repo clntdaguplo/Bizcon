@@ -59,6 +59,12 @@ class AdminConsultantController extends Controller
 
         return back()->with('success', 'Consultant rejected.');
     }
+
+    public function show($id)
+    {
+        $profile = ConsultantProfile::with('user')->findOrFail($id);
+        return view('admin-folder.consultant-show', compact('profile'));
+    }
 }
 
 

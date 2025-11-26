@@ -25,7 +25,8 @@ class SignupController extends Controller
         User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            // Do NOT pre-hash here; it's already hashed by the User model's 'password' => 'hashed' cast
+            'password' => $request->password,
         ]);
 
     return redirect()->route('login')->with('success', 'Account created successfully. Please log in.');

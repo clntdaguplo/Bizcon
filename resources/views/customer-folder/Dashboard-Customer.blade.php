@@ -48,6 +48,19 @@
                     <a href="#" class="text-blue-600 hover:underline">View Bookings</a>
                 </div>
             </div>
+
+			<!-- Personal Notes Widget -->
+			<div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mt-8">
+				<h3 class="text-lg font-semibold mb-4">Personal Notes</h3>
+				<form id="notesForm" class="flex flex-col sm:flex-row gap-3 mb-4">
+					<input id="noteInput" type="text" placeholder="Add a quick note..." class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+					<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Add</button>
+				</form>
+				<ul id="notesList" class="space-y-2"></ul>
+				<div class="mt-4">
+					<button id="clearNotes" class="text-sm text-gray-600 hover:text-gray-800">Clear all</button>
+				</div>
+			</div>
         </div>
     </main>
 
@@ -56,5 +69,68 @@
         <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
     </footer>
 
+	<script>
+		(function() {
+			const STORAGE_KEY = 'customerNotes';
+			const form = document.getElementById('notesForm');
+			const input = document.getElementById('noteInput');
+			const list = document.getElementById('notesList');
+			const clearBtn = document.getElementById('clearNotes');
+
+			function getNotes() {
+				try {
+					return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+				} catch (_) {
+					return [];
+				}
+			}
+
+			function saveNotes(notes) {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+			}
+
+			function renderNotes() {
+				const notes = getNotes();
+				list.innerHTML = '';
+				notes.forEach((note, index) => {
+					const li = document.createElement('li');
+					li.className = 'flex items-center justify-between border border-gray-200 rounded-md px-3 py-2';
+					const text = document.createElement('span');
+					text.className = 'text-gray-800';
+					text.textContent = note;
+					const del = document.createElement('button');
+					del.className = 'text-sm text-red-600 hover:text-red-800';
+					del.textContent = 'Delete';
+					del.addEventListener('click', function() {
+						const updated = getNotes();
+						updated.splice(index, 1);
+						saveNotes(updated);
+						renderNotes();
+					});
+					li.appendChild(text);
+					li.appendChild(del);
+					list.appendChild(li);
+				});
+			}
+
+			form.addEventListener('submit', function(e) {
+				e.preventDefault();
+				const value = (input.value || '').trim();
+				if (!value) return;
+				const notes = getNotes();
+				notes.unshift(value);
+				saveNotes(notes);
+				input.value = '';
+				renderNotes();
+			});
+
+			clearBtn.addEventListener('click', function() {
+				saveNotes([]);
+				renderNotes();
+			});
+
+			renderNotes();
+		})();
+	</script>
 </body>
 </html>

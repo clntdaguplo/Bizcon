@@ -29,6 +29,7 @@
                 <table class="min-w-full border border-gray-200 rounded-lg">
                     <thead class="bg-gray-50">
                         <tr>
+                            <th class="text-left px-4 py-2">Photo</th>
                             <th class="text-left px-4 py-2">Name</th>
                             <th class="text-left px-4 py-2">Email</th>
                             <th class="text-left px-4 py-2">Phone</th>
@@ -40,6 +41,13 @@
                     <tbody>
                         @forelse($consultants as $c)
                             <tr class="border-t">
+                                <td class="px-4 py-2">
+                                    @if($c->avatar_path)
+                                        <img src="{{ asset('storage/'.$c->avatar_path) }}" alt="Avatar" class="h-10 w-10 rounded-full object-cover">
+                                    @else
+                                        <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">--</div>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-2">{{ $c->full_name }}</td>
                                 <td class="px-4 py-2">{{ $c->email }}</td>
                                 <td class="px-4 py-2">{{ $c->phone_number }}</td>
