@@ -1,3 +1,29 @@
+@extends('consultant-folder.layout')
+
+@section('title', 'Pending Approval')
+@section('page-title', 'Account Pending Approval')
+
+@section('content')
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold">Your profile is under review</h2>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Wait for approval</span>
+            </div>
+            <p class="mt-2">Thank you for submitting your information. An admin will review your profile shortly. You will be notified once approved.</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 space-y-4">
+            <h3 class="text-lg font-semibold text-gray-900">What you can do</h3>
+            <ul class="list-disc pl-5 text-gray-700 space-y-2">
+                <li>View and update your profile information</li>
+                <li>Browse public pages of the website</li>
+                <li>Return later to check your approval status</li>
+            </ul>
+        </div>
+    </div>
+@endsection
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

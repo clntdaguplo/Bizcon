@@ -93,6 +93,9 @@
                                         </div>
                                     </div>
                                     <div class="flex space-x-2">
+                                        <a href="{{ route('admin.consultants.show', $profile->id) }}" class="bg-blue-50 text-blue-700 px-4 py-2 rounded hover:bg-blue-100">
+                                            View
+                                        </a>
                                         <form action="{{ route('admin.consultants.approve', $profile->id) }}" method="POST" class="inline">
                                             @csrf
                                             <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
@@ -149,6 +152,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expertise</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -172,6 +176,9 @@
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $consultant->created_at->format('M d, Y') }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <a href="{{ route('admin.consultants.show', $consultant->id) }}" class="text-blue-600 hover:text-blue-800">View</a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

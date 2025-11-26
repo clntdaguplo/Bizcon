@@ -22,7 +22,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Total Sessions</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $consultations->count() }}</p>
                 </div>
             </div>
         </div>
@@ -36,7 +36,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Completed</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $consultations->where('status', 'Completed')->count() }}</p>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">In Progress</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $consultations->where('status', 'Accepted')->count() }}</p>
                 </div>
             </div>
         </div>
@@ -64,7 +64,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Cancelled</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $consultations->where('status', 'Cancelled')->count() }}</p>
                 </div>
             </div>
         </div>
@@ -118,43 +118,73 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <!-- Sample data - replace with actual data -->
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#CONS001</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <span class="text-xs font-medium text-blue-600">JD</span>
+                    @forelse($consultations as $consultation)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#{{ str_pad($consultation->id, 6, '0', STR_PAD_LEFT) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <span class="text-xs font-medium text-blue-600">{{ substr($consultation->consultantProfile->user->name ?? 'N/A', 0, 2) }}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ $consultation->consultantProfile->user->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $consultation->consultantProfile->expertise ?? 'N/A' }}</div>
+                                    </div>
                                 </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                    <div class="text-sm text-gray-500">Marketing Expert</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                        <span class="text-xs font-medium text-green-600">{{ substr($consultation->customer->name ?? 'N/A', 0, 2) }}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ $consultation->customer->name ?? 'N/A' }}</div>
+                                        <div class="text-sm text-gray-500">{{ $consultation->customer->email ?? 'N/A' }}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                    <span class="text-xs font-medium text-green-600">JS</span>
-                                </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                    <div class="text-sm text-gray-500">jane@example.com</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Business Strategy</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Dec 15, 2024 at 2:00 PM</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Completed
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button class="text-blue-600 hover:text-blue-900">View Details</button>
-                        </td>
-                    </tr>
-                    <!-- Add more rows as needed -->
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $consultation->topic }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @if($consultation->preferred_date && $consultation->preferred_time)
+                                    {{ \Carbon\Carbon::parse($consultation->preferred_date)->format('M d, Y') }} at {{ \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') }}
+                                @else
+                                    Not scheduled
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($consultation->status === 'Completed')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                @elseif($consultation->status === 'Accepted')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        In Progress
+                                    </span>
+                                @elseif($consultation->status === 'Cancelled')
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Cancelled
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $consultation->status }}
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-blue-600 hover:text-blue-900">View Details</button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <p class="text-gray-500 text-lg">No consultation sessions found</p>
+                                <p class="text-gray-400 text-sm">Consultation sessions will appear here once they are created</p>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -166,35 +196,38 @@
             <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
         </div>
         <div class="p-6">
-            <div class="space-y-4">
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm text-gray-900">Consultation session completed: Business Strategy with Jane Smith</p>
-                        <p class="text-xs text-gray-500">2 hours ago</p>
-                    </div>
+            @if($consultations->count() > 0)
+                <div class="space-y-4">
+                    @foreach($consultations->take(5) as $consultation)
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0">
+                                @if($consultation->status === 'Completed')
+                                    <div class="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                                @elseif($consultation->status === 'Accepted')
+                                    <div class="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
+                                @elseif($consultation->status === 'Cancelled')
+                                    <div class="w-2 h-2 bg-red-400 rounded-full mt-2"></div>
+                                @else
+                                    <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                                @endif
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">
+                                    Consultation {{ strtolower($consultation->status) }}: {{ $consultation->topic }} 
+                                    @if($consultation->customer)
+                                        with {{ $consultation->customer->name }}
+                                    @endif
+                                </p>
+                                <p class="text-xs text-gray-500">{{ $consultation->created_at->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm text-gray-900">New consultation scheduled: Marketing Consultation</p>
-                        <p class="text-xs text-gray-500">4 hours ago</p>
-                    </div>
+            @else
+                <div class="text-center py-8">
+                    <p class="text-gray-500">No recent activity</p>
                 </div>
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm text-gray-900">Consultation session started: Financial Planning</p>
-                        <p class="text-xs text-gray-500">1 day ago</p>
-                    </div>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
 </div>

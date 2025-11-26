@@ -35,6 +35,17 @@
 
             <form action="{{ route('consultant.profile.save') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                 @csrf
+                <!-- Profile Photo at Top with Preview -->
+                <div class="flex flex-col items-center gap-3">
+                    <div class="h-24 w-24 rounded-full overflow-hidden bg-gray-200">
+                        <img id="avatarPreview" src="" alt="Avatar Preview" class="h-full w-full object-cover hidden">
+                    </div>
+                    <div class="w-full">
+                        <label class="block text-gray-700 mb-2">Profile Photo (optional)</label>
+                        <input id="avatarInput" type="file" name="avatar" accept="image/*" class="w-full">
+                        <p class="text-xs text-gray-500 mt-1">PNG/JPG/WebP up to 2MB.</p>
+                    </div>
+                </div>
                 <div>
                     <label class="block text-gray-700 mb-2">First Name</label>
                     <input type="text" name="first_name" class="w-full px-3 py-2 border rounded" placeholder="Enter your first name" required>
@@ -89,6 +100,20 @@
     <footer class="bg-gray-900 bg-opacity-80 text-gray-300 py-6 text-center mt-12">
         <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
     </footer>
+    <script>
+        (function() {
+            const input = document.getElementById('avatarInput');
+            const preview = document.getElementById('avatarPreview');
+            if (!input) return;
+            input.addEventListener('change', function(ev) {
+                const file = ev.target.files && ev.target.files[0];
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                preview.src = url;
+                preview.classList.remove('hidden');
+            });
+        })();
+    </script>
 </body>
 </html>
 

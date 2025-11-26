@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\LoginAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -44,6 +45,15 @@ class LoginController extends Controller
 
         // Optional: log failed attempt
         // \Log::warning('Failed login attempt for email: ' . $request->email);
+
+        LoginAttempt::create([
+            'email' => $request->input('email'),
+            'was_successful' => false,
+            'reason' => 'invalid_credentials',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'occurred_at' => now(),
+        ]);
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',

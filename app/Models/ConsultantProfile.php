@@ -11,7 +11,7 @@ class ConsultantProfile extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'address', 'age', 'sex', 'resume_path', 'is_verified',
+        'user_id', 'address', 'age', 'sex', 'resume_path', 'avatar_path', 'is_verified',
         'rules_accepted', 'full_name', 'phone_number', 'email', 'expertise',
         'is_rejected', 'admin_note',
     ];

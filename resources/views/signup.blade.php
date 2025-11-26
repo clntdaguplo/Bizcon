@@ -19,8 +19,10 @@
             <nav class="flex items-center space-x-6 pr-6 text-gray-300">
                 <div class="flex space-x-6">
                     <a href="{{ route('home') }}" class="hover:text-white">Home</a>
-                    <a href="{{ route('about') }}" class="hover:text-white">About Us</a>
                     <a href="{{ route('services') }}" class="hover:text-white">Services</a>
+                    <a href="{{ route('about') }}" class="hover:text-white">About Us</a>
+                   
+                    <a href="{{ route('consultants') }}" class="hover:text-white transition duration-300">Our Consultants</a>
                 </div>
                 <span class="mx-2 border-l border-gray-500 h-6"></span>
                 <div class="flex items-center space-x-4">
@@ -82,25 +84,10 @@
                 </button>
 
                 <!-- Divider -->
-                <div class="flex items-center my-6">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="mx-4 text-Blue-500 text-sm">or sign up with</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
-                </div>
+                
 
                 <!-- Social Sign Up Buttons -->
-                <div class="space-y-3">
-                    <a href="#"
-                       class="flex items-center justify-center w-full py-2 px-4 border border-gray-300 rounded-lg bg-white hover:bg-gray-100 transition">
-                        <img src="{{ asset('images/google.png') }}" alt="Google Logo" class="h-5 w-5 mr-2">
-                        <span class="text-gray-700 font-medium">Sign up with Google</span>
-                    </a>
-                    <a href="#"
-                       class="flex items-center justify-center w-full py-2 px-4 border border-gray-300 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
-                        <img src="{{ asset('images/facebook.png') }}" alt="Facebook Logo" class="h-5 w-5 mr-2">
-                        <span class="font-medium">Sign up with Facebook</span>
-                    </a>
-                </div>
+                
             </form>
 
             <p class="text-center text-sm text-gray-700 mt-6">

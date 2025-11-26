@@ -33,7 +33,15 @@ class DashboardController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        return view('customer-folder.dashboard');
+        $featuredConsultants = \App\Models\ConsultantProfile::with('user')
+            ->where('is_verified', true)
+            ->orderByDesc('updated_at')
+            ->take(3)
+            ->get();
+
+        $totalVerifiedConsultants = \App\Models\ConsultantProfile::where('is_verified', true)->count();
+
+        return view('customer-folder.dashboard', compact('featuredConsultants', 'totalVerifiedConsultants'));
     }
 
     // Consultant dashboard
@@ -56,7 +64,24 @@ class DashboardController extends Controller
             return view('consultant-folder.pending');
         }
 
-        return view('consultant-folder.dashboard');
+        // Get consultation statistics
+        $consultations = \App\Models\Consultation::where('consultant_profile_id', $profile->id)->get();
+        
+        $stats = [
+            'pending_consultations' => $consultations->where('status', 'Pending')->count(),
+            'accepted_consultations' => $consultations->where('status', 'Accepted')->count(),
+            'completed_consultations' => $consultations->where('status', 'Completed')->count(),
+            'total_earnings' => $consultations->where('status', 'Completed')->count() * 100, // Example: $100 per completed consultation
+        ];
+
+        // Get recent consultations
+        $recent_consultations = \App\Models\Consultation::with('customer')
+            ->where('consultant_profile_id', $profile->id)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        return view('consultant-folder.dashboard', compact('stats', 'recent_consultations'));
     }
 
     // Admin dashboard
