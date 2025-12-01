@@ -83,8 +83,12 @@
                             <div class="border border-gray-200 rounded-lg p-4">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center space-x-4">
-                                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <span class="text-lg font-medium text-blue-600">{{ substr($profile->user->name, 0, 1) }}</span>
+                                        <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
+                                            @if($profile->avatar_path)
+                                                <img src="{{ asset('storage/'.$profile->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
+                                            @else
+                                                <span class="select-none text-lg font-semibold text-gray-500">{{ substr($profile->full_name ?? $profile->user->name, 0, 1) }}</span>
+                                            @endif
                                         </div>
                                         <div>
                                             <h4 class="text-lg font-medium text-gray-900">{{ $profile->user->name }}</h4>
@@ -130,13 +134,32 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="text-center py-8">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-gray-500">No pending approvals</p>
+                    <div class="flex items-center space-x-4 p-6 bg-white rounded-lg shadow">
+                        @php
+                            $avatar = auth()->user()->avatar_path ?? null;
+                            $nameParts = array_filter(explode(' ', trim(auth()->user()->name)));
+                            $initials = '';
+                            foreach (array_slice($nameParts, 0, 2) as $part) {
+                                $initials .= strtoupper(substr($part, 0, 1));
+                            }
+                            if ($initials === '') {
+                                $initials = strtoupper(substr(auth()->user()->name, 0, 1) ?: 'U');
+                            }
+                        @endphp
+                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-lg font-medium text-gray-700 overflow-hidden">
+                            @if($avatar)
+                                <img src="{{ asset('storage/' . $avatar) }}" alt="{{ auth()->user()->name }}" class="h-full w-full object-cover">
+                            @else
+                                <span class="select-none">{{ $initials }}</span>
+                            @endif
+                        </div>
+                        <div>
+                            <div class="text-lg font-medium text-gray-900">{{ auth()->user()->name }}</div>
+                            <div class="text-sm text-gray-500">{{ auth()->user()->email }}</div>
+                            <p class="text-sm text-gray-500 mt-2">No pending approvals at the moment.</p>
+                        </div>
                     </div>
-                @endif
+                 @endif
             </div>
 
             <!-- Consultants Tab -->
@@ -160,8 +183,12 @@
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                                    <span class="text-sm font-medium text-blue-600">{{ substr($consultant->user->name, 0, 1) }}</span>
+                                                <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                                                    @if($consultant->avatar_path)
+                                                        <img src="{{ asset('storage/'.$consultant->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
+                                                    @else
+                                                        <span class="select-none font-semibold text-gray-500">{{ substr($consultant->full_name ?? $consultant->user->name, 0, 1) }}</span>
+                                                    @endif
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="text-sm font-medium text-gray-900">{{ $consultant->user->name }}</div>
@@ -213,8 +240,12 @@
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                                    <span class="text-sm font-medium text-green-600">{{ substr($customer->name, 0, 1) }}</span>
+                                                <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                                                    @if($customer->avatar_path)
+                                                        <img src="{{ asset('storage/'.$customer->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
+                                                    @else
+                                                        <span class="select-none font-semibold text-gray-500">{{ substr($customer->name, 0, 1) }}</span>
+                                                    @endif
                                                 </div>
                                                 <div class="ml-4">
                                                     <div class="text-sm font-medium text-gray-900">{{ $customer->name }}</div>
