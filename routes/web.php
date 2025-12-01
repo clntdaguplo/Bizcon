@@ -106,6 +106,8 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
     
     // Client response to consultant's proposed schedule
     Route::post('/customer/consultations/{id}/respond-proposal', [ConsultationController::class, 'respondToProposal'])->name('customer.consultations.respond-proposal');
+    // Client cancels their consultation
+    Route::post('/customer/consultations/{id}/cancel', [ConsultationController::class, 'cancelByCustomer'])->name('customer.consultations.cancel');
     
     // Download consultation report
     Route::get('/customer/consultations/{id}/report', [ConsultationController::class, 'downloadReport'])->name('customer.consultations.report');
