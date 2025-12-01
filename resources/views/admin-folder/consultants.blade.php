@@ -117,8 +117,12 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <span class="text-sm font-medium text-blue-600">{{ substr($consultant->user->name, 0, 1) }}</span>
+                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                                        @if($consultant->avatar_path)
+                                            <img src="{{ asset('storage/'.$consultant->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
+                                        @else
+                                            <span class="select-none font-semibold text-gray-500">{{ substr($consultant->full_name ?? $consultant->user->name, 0, 1) }}</span>
+                                        @endif
                                     </div>
                                     <div class="ml-4">
                                         <div class="text-sm font-medium text-gray-900">{{ $consultant->user->name }}</div>

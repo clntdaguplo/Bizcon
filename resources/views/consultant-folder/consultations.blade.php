@@ -5,6 +5,28 @@
 
 @section('content')
     <div class="max-w-7xl mx-auto">
+        {{-- banner shown only when controller sets $showProfileBanner --}}
+        @if(!empty($showProfileBanner))
+             <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-xl mb-6">
+                 <div class="flex items-start justify-between">
+                     <div class="flex items-start">
+                         <svg class="w-5 h-5 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                             <path d="M18 10c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8zM9 7h2v5H9V7zm0 6h2v2H9v-2z"/>
+                         </svg>
+                         <div class="ml-3">
+                            <p class="font-medium">Complete your profile to start receiving consultations and accept bookings.</p>
+                             <p class="text-sm mt-1 text-yellow-700">Fill out required fields and upload your photo/resume so customers can book you.</p>
+                         </div>
+                     </div>
+                     <div class="ml-4">
+                         <a href="{{ route('consultant.profile') }}" class="px-4 py-2 bg-yellow-600 text-white rounded-md text-sm hover:bg-yellow-700">
+                             Complete Profile
+                         </a>
+                     </div>
+                 </div>
+             </div>
+        @endif
+
         <!-- Header Section -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">

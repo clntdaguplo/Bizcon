@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('consultant_profiles', function (Blueprint $table) {
+        Schema::table('consultations', function (Blueprint $table) {
             $table->text('google_token')->nullable()->after('meeting_link');
         });
     }
 
     public function down(): void
     {
-        Schema::table('consultant_profiles', function (Blueprint $table) {
+        Schema::table('consultations', function (Blueprint $table) {
             $table->dropColumn('google_token');
         });
     }
