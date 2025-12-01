@@ -9,6 +9,7 @@ use App\Models\ConsultationRating;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\DB;
 
 class ConsultationController extends Controller
 {
@@ -37,18 +38,40 @@ class ConsultationController extends Controller
 
     public function consultantInbox()
     {
-        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
-        $consultations = Consultation::with('customer')
-            ->where('consultant_profile_id', $profile->id)
-            ->orderByDesc('created_at')
-            ->paginate(15);
+        // query the consultant_profiles table in the bizcon database directly
+        // (returns a stdClass row; used only for presence / fields checks here)
+        $profile = DB::table('bizcon.consultant_profiles')->where('user_id', Auth::id())->first();
 
-        // Auto-expire old pending/proposed requests based on preferred date
-        foreach ($consultations as $consultation) {
-            $consultation->markExpiredIfPastPreferredDate();
+        // define which fields mark the profile as "submitted" (adjust as needed)
+        $isSubmitted = false;
+        if ($profile) {
+            $isSubmitted = !empty($profile->full_name)
+                && !empty($profile->expertise)
+                && !empty($profile->avatar_path)
+                && !empty($profile->resume_path)
+                && !empty($profile->address)
+                && !empty($profile->age)
+                && !empty($profile->sex);
         }
 
-        return view('consultant-folder.consultations', compact('consultations'));
+        $showProfileBanner = ! $isSubmitted; // true when profile missing/incomplete
+
+        if ($profile) {
+            $consultations = Consultation::with('customer')
+                ->where('consultant_profile_id', $profile->id) // $profile->id works from the DB row
+                ->orderByDesc('created_at')
+                ->paginate(15);
+
+            // Auto-expire old pending/proposed requests based on preferred date
+            foreach ($consultations as $consultation) {
+                $consultation->markExpiredIfPastPreferredDate();
+            }
+        } else {
+            // no profile yet — empty collection (view uses @forelse)
+            $consultations = collect();
+        }
+
+        return view('consultant-folder.consultations', compact('consultations', 'profile', 'showProfileBanner'));
     }
 
     // Show consultation requests for the authenticated customer
