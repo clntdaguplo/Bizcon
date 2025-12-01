@@ -123,7 +123,7 @@
         <div class="bg-white rounded-lg shadow">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">Session Distribution</h3>
-                <p class="text-sm text-gray-600">By service category</p>
+                <p class="text-sm text-gray-600">By consultant expertise</p>
             </div>
             <div class="p-6">
                 <div class="h-64">
@@ -289,20 +289,22 @@ if (revenueCtx) {
     });
 }
 
-// Session Distribution Chart
+// Session Distribution Chart (by consultant expertise)
 @php
-    $topics = $consultations->groupBy('topic')->take(4);
-    $topicLabels = $topics->keys()->toArray();
-    $topicCounts = $topics->map->count()->values()->toArray();
+    $expertiseGroups = $consultations->groupBy(function($consultation) {
+        return $consultation->consultantProfile?->expertise ?? 'Unknown';
+    })->take(4);
+    $expertiseLabels = $expertiseGroups->keys()->toArray();
+    $expertiseCounts = $expertiseGroups->map->count()->values()->toArray();
 @endphp
 const sessionCtx = document.getElementById('sessionChart');
 if (sessionCtx) {
     new Chart(sessionCtx.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode($topicLabels ?: ['No data']) !!},
+            labels: {!! json_encode($expertiseLabels ?: ['No data']) !!},
             datasets: [{
-                data: {!! json_encode($topicCounts ?: [0]) !!},
+                data: {!! json_encode($expertiseCounts ?: [0]) !!},
                 backgroundColor: [
                     'rgb(59, 130, 246)',
                     'rgb(16, 185, 129)',

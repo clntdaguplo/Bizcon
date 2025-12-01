@@ -109,12 +109,43 @@
                                     </div>
                                     <div class="flex-1">
                                         <h3 class="text-xl font-bold text-gray-900">{{ $consultant->full_name }}</h3>
-                                        <p class="text-blue-600 font-semibold">{{ $consultant->expertise }}</p>
-                                        <div class="flex items-center mt-1">
-                                            <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            <span class="text-sm text-green-600 font-medium">Verified</span>
+                                        @php
+                                            $expertiseList = $consultant->expertise
+                                                ? array_filter(array_map('trim', explode(',', $consultant->expertise)))
+                                                : [];
+                                        @endphp
+                                        @if(!empty($expertiseList))
+                                            <ul class="mt-2 text-sm text-gray-700 space-y-1 list-disc list-inside">
+                                                @foreach($expertiseList as $expertiseItem)
+                                                    <li>{{ $expertiseItem }}</li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <p class="text-sm text-gray-500 mt-2">No expertise listed</p>
+                                        @endif
+                                        <div class="flex items-center mt-4 space-x-3">
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                <span class="text-sm text-green-600 font-medium">Verified</span>
+                                            </div>
+                                            @if($consultant->average_rating)
+                                                <div class="flex items-center">
+                                                    @for($i = 1; $i <= 5; $i++)
+                                                        @if($i <= round($consultant->average_rating))
+                                                            <span class="text-yellow-500 text-base">⭐</span>
+                                                        @else
+                                                            <span class="text-gray-300 text-base">☆</span>
+                                                        @endif
+                                                    @endfor
+                                                </div>
+                                            @else
+                                                <div class="flex items-center">
+                                                    <span class="text-gray-300 text-base">☆☆☆☆☆</span>
+                                                    <span class="text-xs text-gray-500 ml-2">No ratings yet</span>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
@@ -127,14 +158,6 @@
                                         </svg>
                                         <span class="text-sm">{{ $consultant->email }}</span>
                                     </div>
-                                    @if($consultant->phone_number)
-                                        <div class="flex items-center text-gray-600">
-                                            <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                            </svg>
-                                            <span class="text-sm">{{ $consultant->phone_number }}</span>
-                                        </div>
-                                    @endif
                                 </div>
 
                                 <!-- Action Buttons -->

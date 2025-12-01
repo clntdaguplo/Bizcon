@@ -78,86 +78,90 @@
         <div class="container mx-auto px-6">
             <div class="text-center mb-16">
                 <h2 class="text-4xl font-bold text-gray-900 mb-4">Our Services</h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Discover the comprehensive range of professional services we offer to help your business thrive and achieve sustainable growth.</p>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">Explore the core service areas where our consultants can support your growth.</p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Technology & IT Support -->
                 <div class="bg-gray-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                     <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">E-commerce Business</h3>
-                    <p class="text-gray-600 mb-6">Expert guidance to launch, grow, and scale your online store with proven strategies, tools, and insights tailored to your niche and audience. </p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Technology & IT Support</h3>
+                    <p class="text-gray-600 mb-6">Secure, stable, and scalable IT support to keep your tools, data, and systems running smoothly.</p>
                     <ul class="text-gray-600 space-y-2">
-                        <li>• Online Store Setup</li>
-                        <li>• Product Sourcing & Listing</li>
-                        <li>• Sales Funnel Optimization</li>
+                        <li>• Infrastructure & system setup</li>
+                        <li>• Cybersecurity & data protection</li>
+                        <li>• Day-to-day technical support</li>
                     </ul>
                 </div>
 
+                <!-- E-commerce Business -->
                 <div class="bg-gray-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                     <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 7h18M5 11h14l-1.5 7h-11L5 11z"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Marketing business</h3>
-                    <p class="text-gray-600 mb-6">Comprehensive marketing strategies designed to boost brand visibility, attract your ideal customers, and drive measurable business growth.</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">E-commerce Business</h3>
+                    <p class="text-gray-600 mb-6">From setup to scaling, get support to turn your online store into a reliable revenue channel.</p>
                     <ul class="text-gray-600 space-y-2">
-                        <li>• Market Research</li>
-                        <li>• Competitive Analysis</li>
-                        <li>• Brand Development</li>
+                        <li>• Store setup & optimization</li>
+                        <li>• Product catalog & pricing strategy</li>
+                        <li>• Conversion & checkout improvements</li>
                     </ul>
                 </div>
 
+                <!-- Marketing Business -->
                 <div class="bg-gray-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                     <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5a1 1 0 011-1h7m0 0v7m0-7L11 16l-4-4-4 4"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">IT Specialist</h3>
-                    <p class="text-gray-600 mb-6">Expert IT solutions tailored to your business needs—ensuring secure, efficient, and scalable systems to support growth and innovation.</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Marketing Business</h3>
+                    <p class="text-gray-600 mb-6">Build your brand, reach the right audience, and turn attention into measurable results.</p>
                     <ul class="text-gray-600 space-y-2">
-                        <li>• IT Infrastructure Management</li>
-                        <li>• Cybersecurity Solutions</li>
-                        <li>• Cloud Services & Support</li>
+                        <li>• Brand & campaign strategy</li>
+                        <li>• Digital & social marketing</li>
+                        <li>• Customer acquisition planning</li>
                     </ul>
                 </div>
 
+                <!-- Education & Career Coaching -->
                 <div class="bg-gray-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                     <div class="w-16 h-16 bg-orange-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0v7"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Financial Business</h3>
-                    <p class="text-gray-600 mb-6">Professional financial services to help you manage resources wisely, ensure compliance, and drive sustainable business growth.</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Education & Career Coaching</h3>
+                    <p class="text-gray-600 mb-6">Plan your next step with expert guidance on education paths and career opportunities.</p>
                     <ul class="text-gray-600 space-y-2">
-                        <li>• Financial Planning & Analysis</li>
-                        <li>• Accounting & Bookkeeping</li>
-                        <li>• Tax Strategy & Compliance</li>
+                        <li>• Career & course guidance</li>
+                        <li>• Skills and growth planning</li>
+                        <li>• Interview & CV coaching</li>
                     </ul>
                 </div>
 
+                <!-- Financial Business -->
                 <div class="bg-gray-50 p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
                     <div class="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center mb-6">
                         <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .843-3 2.5S10.343 13 12 13s3 .843 3 2.5S13.657 18 12 18m0-10V4m0 14v2"></path>
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Financial Advisory</h3>
-                    <p class="text-gray-600 mb-6">Expert financial guidance to optimize your business finances and ensure sustainable growth.</p>
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Financial Business</h3>
+                    <p class="text-gray-600 mb-6">Gain clarity and control over your numbers with structured financial support.</p>
                     <ul class="text-gray-600 space-y-2">
-                        <li>• Financial Planning</li>
-                        <li>• Investment Strategy</li>
-                        <li>• Risk Assessment</li>
+                        <li>• Budgeting & cashflow review</li>
+                        <li>• Financial planning & analysis</li>
+                        <li>• Compliance & reporting guidance</li>
                     </ul>
                 </div>
 
-                
             </div>
         </div>
             </section>
@@ -254,41 +258,27 @@
             <!-- Footer -->
     <footer class="bg-gray-900 text-gray-300 py-16">
         <div class="container mx-auto px-6">
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Know Us -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+                <!-- BizConsult Intro -->
                 <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">BIZ CONSULT</h3>
-                    <ul class="space-y-3">
-                        <li><a href="#about" class="hover:text-white transition duration-300">Your trusted partner for business consulting and professional services. We help businesses grow, innovate, and achieve their goals through expert guidance and strategic planning.
-
-                    </a></li>
-                        
-                    </ul>
+                    <h3 class="text-2xl font-semibold text-white mb-4">BizConsult</h3>
+                    <p class="text-gray-300 leading-relaxed max-w-md">
+                        Your trusted partner for business consulting and professional services. 
+                        We help businesses grow, innovate, and achieve their goals through expert guidance, 
+                        strategic planning, and practical, results-driven solutions.
+                    </p>
                 </div>
 
-                <!-- IP Policy -->
+                <!-- Contact -->
                 <div>
                     <h3 class="text-xl font-semibold text-white mb-6">CONTACT US</h3>
                     <ul class="space-y-3">
-                        <li><a href="#" class="hover:text-white transition duration-300">bizconsult@gmail.com</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Uc Main Sancianqko St, Avocado Bldg, 5th Floor</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Cebu City</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">+0912 345 6789</a></li>
+                        <li><a href="mailto:bizconsult@gmail.com" class="hover:text-white transition duration-300">bizconsult@gmail.com</a></li>
+                        <li><span class="hover:text-white transition duration-300">Uc Main Sancianqko St, Avocado Bldg, 5th Floor</span></li>
+                        <li><span class="hover:text-white transition duration-300">Cebu City</span></li>
+                        <li><a href="tel:+09123456789" class="hover:text-white transition duration-300">+0912 345 6789</a></li>
                     </ul>
                 </div>
-
-                <!-- Grievance -->
-                <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">Grievance Redressal</h3>
-                    <ul class="space-y-3">
-                        <li><a href="#" class="hover:text-white transition duration-300">Grievance Redressal Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Contact Support</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Report Issue</a></li>
-                    </ul>
-                </div>
-
-                <!-- Other -->
-                
             </div>
 
             <div class="border-t border-gray-700 mt-12 pt-8">

@@ -28,6 +28,23 @@ class CustomerConsultantController extends Controller
             ->paginate(12)
             ->appends(['q' => $query]);
 
+        // Calculate average ratings for each consultant
+        foreach ($consultants as $consultant) {
+            $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($consultant) {
+                $q->where('consultant_profile_id', $consultant->id);
+            })
+            ->where('rater_type', 'customer')
+            ->get();
+            
+            if ($ratings->count() > 0) {
+                $consultant->average_rating = round($ratings->avg('rating'), 1);
+                $consultant->total_ratings = $ratings->count();
+            } else {
+                $consultant->average_rating = null;
+                $consultant->total_ratings = 0;
+            }
+        }
+
         return view('customer-folder.consultants', compact('consultants', 'query'));
     }
 

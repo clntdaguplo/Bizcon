@@ -18,7 +18,7 @@
                             <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
-                            <span>{{ $consultants->total() }} Verified Consultants</span>
+                            <span>Verified Consultants</span>
                         </div>
                     </div>
                 </div>
@@ -27,9 +27,10 @@
             <!-- Search Form -->
             <form method="GET" action="{{ route('customer.consultants') }}" class="mb-6">
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <input type="text" name="q" value="{{ $query ?? '' }}" 
+                    <input type="text" name="q" id="live-search" value="{{ $query ?? '' }}" 
                            placeholder="Search by expertise, name, or email..." 
-                           class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                           class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           autocomplete="off">
                     <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
                         Search Consultants
                     </button>
@@ -46,7 +47,7 @@
 
         <!-- Consultants Grid -->
         <div class="bg-white rounded-xl shadow p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="consultants-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 @forelse($consultants as $c)
                     <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition duration-300 hover:border-blue-300">
                         <!-- Consultant Avatar and Basic Info -->
@@ -65,11 +66,29 @@
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-gray-900">{{ $c->full_name }}</h3>
                                 <p class="text-blue-600 font-semibold">{{ $c->expertise }}</p>
-                                <div class="flex items-center mt-1">
-                                    <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span class="text-sm text-green-600 font-medium">Verified</span>
+                                <div class="flex items-center mt-2 space-x-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="text-sm text-green-600 font-medium">Verified</span>
+                                    </div>
+                                    @if($c->average_rating)
+                                        <div class="flex items-center">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                @if($i <= round($c->average_rating))
+                                                    <span class="text-yellow-500 text-base">⭐</span>
+                                                @else
+                                                    <span class="text-gray-300 text-base">☆</span>
+                                                @endif
+                                            @endfor
+                                        </div>
+                                    @else
+                                        <div class="flex items-center">
+                                            <span class="text-gray-300 text-base">☆☆☆☆☆</span>
+                                            <span class="text-xs text-gray-500 ml-2">No ratings yet</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -82,14 +101,6 @@
                                 </svg>
                                 <span class="text-sm">{{ $c->email }}</span>
                             </div>
-                            @if($c->phone_number)
-                                <div class="flex items-center text-gray-600">
-                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                    <span class="text-sm">{{ $c->phone_number }}</span>
-                                </div>
-                            @endif
                         </div>
 
                         <!-- Action Buttons -->
@@ -128,51 +139,100 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const requestButtons = document.querySelectorAll('a[href*="/consultants/request/"]');
+        const searchInput = document.getElementById('live-search');
+        const grid = document.getElementById('consultants-grid');
+        const originalGridHtml = grid ? grid.innerHTML : '';
+        let searchTimer = null;
 
+        // Confirm before requesting consultation
         requestButtons.forEach(button => {
             button.addEventListener('click', function (event) {
-                // Prevent the link from navigating immediately
                 event.preventDefault();
-                
-                // Show a confirmation dialog
                 if (confirm('Are you sure you want to request this consultation?')) {
                     window.location.href = this.href;
                 }
             });
         });
+
+        // Live search (autocomplete-style)
+        if (searchInput && grid) {
+            searchInput.addEventListener('input', function () {
+                const q = this.value.trim();
+
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    if (q.length < 2) {
+                        // Restore original server-rendered list when search is cleared/very short
+                        grid.innerHTML = originalGridHtml;
+                        return;
+                    }
+
+                    fetch(`{{ route('customer.consultants.api.all') }}?q=${encodeURIComponent(q)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) return;
+
+                            const consultants = data.data || [];
+                            if (!consultants.length) {
+                                grid.innerHTML = `
+                                    <div class="col-span-full text-center py-10 text-gray-500">
+                                        No consultants match "<span class="font-semibold">${q}</span>".
+                                    </div>
+                                `;
+                                return;
+                            }
+
+                            grid.innerHTML = consultants.map(c => {
+                                const expertiseList = c.expertise
+                                    ? c.expertise.split(',').map(item => item.trim()).filter(Boolean)
+                                    : [];
+                                const expertiseHtml = expertiseList.length
+                                    ? `<ul class="mt-1 text-xs text-gray-600 space-y-0.5 list-disc list-inside">
+                                            ${expertiseList.map(item => `<li>${item}</li>`).join('')}
+                                       </ul>`
+                                    : `<p class="text-xs text-gray-500 mt-1">No expertise listed</p>`;
+
+                                const avatar = c.avatar_path
+                                    ? `<img src="{{ asset('storage') }}/${c.avatar_path}" alt="${c.full_name}" class="h-full w-full object-cover">`
+                                    : `<div class="h-full w-full flex items-center justify-center text-gray-500 text-2xl font-bold">
+                                           ${c.full_name ? c.full_name.charAt(0) : '?'}
+                                       </div>`;
+
+                                return `
+                                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition duration-300 hover:border-blue-300">
+                                        <div class="flex items-center mb-4">
+                                            <div class="h-16 w-16 rounded-full overflow-hidden bg-gray-200 mr-4 flex-shrink-0">
+                                                ${avatar}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h3 class="text-xl font-bold text-gray-900">${c.full_name}</h3>
+                                                ${expertiseHtml}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 mb-4">
+                                            <div class="flex items-center text-gray-600">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <span class="text-sm">${c.email ?? ''}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex space-x-3">
+                                            <a href="/customer/consultants/${c.id}/request" 
+                                               class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                                                Request Consultation
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        })
+                        .catch(error => {
+                            console.error('Error fetching consultants:', error);
+                        });
+                }, 300); // debounce
+            });
+        }
     });
-    // AJAX functionality for fetching consultants
-    function fetchAllConsultants() {
-        fetch('{{ route("customer.consultants.api.all") }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Total consultants:', data.total);
-                    console.log('Consultants data:', data.data);
-                    // You can use this data for dynamic updates
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching consultants:', error);
-            });
-    }
-
-    // Fetch consultant statistics
-    function fetchConsultantStats() {
-        fetch('{{ route("customer.consultants.api.stats") }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Consultant statistics:', data.stats);
-                    // Update UI with statistics if needed
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching stats:', error);
-            });
-    }
-
-    // Auto-refresh functionality (optional)
-    // setInterval(fetchAllConsultants, 30000); // Refresh every 30 seconds
 </script>
 @endsection

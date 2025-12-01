@@ -98,6 +98,67 @@ class DashboardController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('admin-folder.dashboard', compact('consultants', 'customers'));
+        // Analytics data
+        $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])->get();
+        
+        // Total consultations
+        $totalConsultations = $consultations->count();
+        
+        // Most booked consultant
+        $mostBookedConsultant = $consultations->groupBy('consultant_profile_id')
+            ->map(function($group) {
+                return [
+                    'count' => $group->count(),
+                    'consultant' => $group->first()->consultantProfile->user->name ?? 'Unknown',
+                    'profile_id' => $group->first()->consultant_profile_id
+                ];
+            })
+            ->sortByDesc('count')
+            ->first();
+        
+        // Most common topics
+        $topTopics = $consultations->groupBy('topic')
+            ->map(function($group) {
+                return $group->count();
+            })
+            ->sortByDesc(function($count) {
+                return $count;
+            })
+            ->take(5);
+        
+        // Monthly consultations (last 6 months)
+        $monthlyData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $count = $consultations->filter(function($consultation) use ($month) {
+                return $consultation->created_at->format('Y-m') === $month->format('Y-m');
+            })->count();
+            $monthlyData[] = [
+                'month' => $month->format('M Y'),
+                'count' => $count
+            ];
+        }
+        
+        // Status breakdown
+        $statusBreakdown = $consultations->groupBy('status')
+            ->map(function($group) {
+                return $group->count();
+            });
+        
+        // Pending approvals
+        $pendingApprovals = \App\Models\ConsultantProfile::where('is_verified', false)
+            ->where('is_rejected', false)
+            ->count();
+
+        return view('admin-folder.dashboard', compact(
+            'consultants', 
+            'customers', 
+            'totalConsultations',
+            'mostBookedConsultant',
+            'topTopics',
+            'monthlyData',
+            'statusBreakdown',
+            'pendingApprovals'
+        ));
     }
 }

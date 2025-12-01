@@ -57,7 +57,7 @@
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:border-blue-400">
                 </div>
 
-                <div class="flex items-center justify-between text-sm text-gray-600">
+                <div class="flex items-center justify-between text-sm text-black-600">
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" class="rounded" name="remember">
                         <span>Remember me</span>
@@ -73,7 +73,7 @@
                
             </form>
 
-            <p class="text-center text-sm text-gray-700 mt-6">
+            <p class="text-center text-sm text-black-700 mt-6">
                 Don’t have an account?
                 <a href="{{ route('signup') }}" class="text-blue-500 hover:underline">Sign Up</a>
             </p>

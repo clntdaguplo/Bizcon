@@ -22,7 +22,7 @@
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-600">Pending Approvals</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $pendingApprovals ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -63,8 +63,8 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Total Sessions</p>
-                    <p class="text-2xl font-semibold text-gray-900">0</p>
+                    <p class="text-sm font-medium text-gray-600">Total Consultations</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $totalConsultations ?? 0 }}</p>
                 </div>
             </div>
         </div>
@@ -141,6 +141,59 @@
         </div>
     </div>
 
+    <!-- Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Monthly Consultations Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Consultations</h3>
+            <div class="relative h-48">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Status Breakdown Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Breakdown</h3>
+            <div class="relative h-48">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Topics and Most Booked Consultant -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Most Common Topics -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Most Common Topics</h3>
+            @if($topTopics && $topTopics->count() > 0)
+                <div class="space-y-3">
+                    @foreach($topTopics as $topic => $count)
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-700">{{ $topic }}</span>
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{{ $count }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-gray-500 text-center py-8">No consultation topics yet</p>
+            @endif
+        </div>
+
+        <!-- Most Booked Consultant -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Most Booked Consultant</h3>
+            @if($mostBookedConsultant)
+                <div class="text-center py-8">
+                    <div class="text-4xl font-bold text-blue-600 mb-2">{{ $mostBookedConsultant['count'] }}</div>
+                    <p class="text-lg text-gray-700 mb-1">{{ $mostBookedConsultant['consultant'] }}</p>
+                    <p class="text-sm text-gray-500">Total Consultations</p>
+                </div>
+            @else
+                <p class="text-gray-500 text-center py-8">No consultations yet</p>
+            @endif
+        </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
@@ -196,4 +249,77 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Monthly Consultations Chart
+    const monthlyCtx = document.getElementById('monthlyChart');
+    if (monthlyCtx) {
+        const monthlyData = @json($monthlyData ?? []);
+        new Chart(monthlyCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'Consultations',
+                    data: monthlyData.map(d => d.count),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Status Breakdown Chart
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+        const statusData = @json($statusBreakdown ?? []);
+        new Chart(statusCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statusData),
+                datasets: [{
+                    data: Object.values(statusData),
+                    backgroundColor: [
+                        'rgb(59, 130, 246)',   // Blue for Pending
+                        'rgb(16, 185, 129)',   // Green for Accepted
+                        'rgb(139, 92, 246)',   // Purple for Completed
+                        'rgb(239, 68, 68)',    // Red for Rejected
+                        'rgb(156, 163, 175)'   // Gray for others
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+</script>
 @endsection

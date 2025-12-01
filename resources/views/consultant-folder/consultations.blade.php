@@ -16,15 +16,15 @@
                     <div class="flex items-center space-x-4 text-sm text-gray-600">
                         <div class="flex items-center">
                             <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                            <span>{{ $consultations->where('status', 'Pending')->count() }} Pending</span>
+                            <span>Pending</span>
                         </div>
                         <div class="flex items-center">
                             <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                            <span>{{ $consultations->where('status', 'Accepted')->count() }} Accepted</span>
+                            <span>Accepted</span>
                         </div>
                         <div class="flex items-center">
                             <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-                            <span>{{ $consultations->where('status', 'Completed')->count() }} Completed</span>
+                            <span>Completed</span>
                         </div>
                     </div>
                 </div>
@@ -34,19 +34,19 @@
             <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                 <button onclick="filterConsultations('all')" 
                         class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-gray-900 shadow-sm">
-                    All ({{ $consultations->count() }})
+                    All
                 </button>
                 <button onclick="filterConsultations('pending')" 
                         class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:bg-white">
-                    Pending ({{ $consultations->where('status', 'Pending')->count() }})
+                    Pending
                 </button>
                 <button onclick="filterConsultations('accepted')" 
                         class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:bg-white">
-                    Accepted ({{ $consultations->where('status', 'Accepted')->count() }})
+                    Accepted
                 </button>
                 <button onclick="filterConsultations('completed')" 
                         class="filter-btn px-4 py-2 rounded-md text-sm font-medium transition-colors text-gray-600 hover:bg-white">
-                    Completed ({{ $consultations->where('status', 'Completed')->count() }})
+                    Completed
                 </button>
             </div>
         </div>
@@ -74,6 +74,22 @@
                             </div>
                             
                             <p class="text-gray-700 mb-4">{{ Str::limit($consultation->details, 150) }}</p>
+                            
+                            @if($consultation->status === 'Completed' && $consultation->client_readiness_rating)
+                                <div class="mb-3 flex items-center">
+                                    <span class="text-sm text-gray-600 mr-2">Client Readiness:</span>
+                                    <div class="flex items-center">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $consultation->client_readiness_rating)
+                                                <span class="text-yellow-500 text-lg">⭐</span>
+                                            @else
+                                                <span class="text-gray-300 text-lg">☆</span>
+                                            @endif
+                                        @endfor
+                                        <span class="ml-2 text-sm text-gray-700 font-medium">{{ $consultation->client_readiness_rating }}/5</span>
+                                    </div>
+                                </div>
+                            @endif
                             
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                                 <div class="flex items-center">
@@ -114,18 +130,59 @@
                                     </form>
                                 </div>
                             @elseif($consultation->status === 'Accepted')
+                                <a href="{{ route('consultant.consultations.open', $consultation->id) }}" 
+                                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                    Open Request
+                                </a>
                                 <form method="POST" action="{{ route('consultant.consultations.complete', $consultation->id) }}" class="inline">
                                     @csrf
-                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors w-full mt-2">
                                         Mark Complete
                                     </button>
                                 </form>
+                            @elseif($consultation->status === 'Completed')
+                                <div class="space-y-2">
+                                    @if($consultation->consultation_summary)
+                                        <a href="{{ route('consultant.consultations.report.view', $consultation->id) }}" 
+                                           class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors w-full" target="_blank">
+                                            📄 View Report
+                                        </a>
+                                        @if($consultation->client_readiness_rating)
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                <p class="text-xs text-gray-600 mb-1">Client Readiness:</p>
+                                                <div class="flex items-center">
+                                                    @for($i = 1; $i <= 5; $i++)
+                                                        @if($i <= $consultation->client_readiness_rating)
+                                                            <span class="text-yellow-500 text-lg">⭐</span>
+                                                        @else
+                                                            <span class="text-gray-300 text-lg">☆</span>
+                                                        @endif
+                                                    @endfor
+                                                    <span class="ml-2 text-sm text-gray-700">{{ $consultation->client_readiness_rating }}/5</span>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @else
+                                        <a href="{{ route('consultant.consultations.report', $consultation->id) }}" 
+                                           class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors w-full">
+                                            ✍️ Create Report
+                                        </a>
+                                    @endif
+                                    @php
+                                        $hasRated = \App\Models\ConsultationRating::where('consultation_id', $consultation->id)
+                                            ->where('rater_id', Auth::id())
+                                            ->where('rater_type', 'consultant')
+                                            ->exists();
+                                    @endphp
+                                    @if(!$hasRated)
+                                        <a href="{{ route('consultant.consultations.rate', $consultation->id) }}" 
+                                           class="inline-block bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700 transition-colors w-full">
+                                            ⭐ Rate Client
+                                        </a>
+                                    @endif
+                                </div>
                             @endif
                             
-                            <button onclick="viewConsultationDetails({{ $consultation->id }})" 
-                                    class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                                View Details
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -167,9 +224,6 @@
         });
     }
     
-    function viewConsultationDetails(consultationId) {
-        // This would open a modal or redirect to a details page
-        alert('Consultation details for ID: ' + consultationId);
-    }
+    // viewConsultationDetails removed — Open Request now navigates to the request response page
 </script>
 @endsection
