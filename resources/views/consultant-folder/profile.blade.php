@@ -5,7 +5,22 @@
 
 @section('content')
     <div class="max-w-4xl mx-auto">
-        @if (!$profile->is_verified)
+        @php
+            // Consider profile "complete" when required fields are present.
+            $isComplete = false;
+            if (isset($profile) && $profile->exists) {
+                $isComplete = !empty($profile->full_name)
+                    && !empty($profile->expertise)
+                    && !empty($profile->avatar_path)
+                    && !empty($profile->resume_path)
+                    && !empty($profile->address)
+                    && !empty($profile->age)
+                    && !empty($profile->sex);
+            }
+            // show the note only when profile is not complete
+            $showProfileNote = ! $isComplete;
+        @endphp
+        @if ($showProfileNote)
             <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 p-4 rounded-xl mb-6">
                 <div class="flex items-start">
                     <svg class="w-5 h-5 text-yellow-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -13,7 +28,7 @@
                             d="M18 10c0 4.418-3.582 8-8 8s-8-3.582-8-8 3.582-8 8-8 8 3.582 8 8zM9 7h2v5H9V7zm0 6h2v2H9v-2z" />
                     </svg>
                     <div class="ml-3">
-                        <p class="font-medium">Complete your profile to get verified and accept consultations bookings</p>
+                        <p class="font-medium">Complete your profile to get verified and accept consultation bookings</p>
                         <p class="text-sm mt-1 text-yellow-700">Fill out all required fields and upload your photo/resume.
                             Verification allows you to accept booking requests.</p>
                     </div>
