@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ConsultantProfile;
+use App\Models\ConsultationRating;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -37,7 +38,25 @@ class ConsultantProfileController extends Controller
         if ((!$profile->exists || !$profile->rules_accepted) && !$rulesAcceptedSession) {
             return redirect()->route('consultant.rules');
         }
-        return view('consultant-folder.profile', compact('profile'));
+
+        $averageRating = null;
+        $totalRatings = 0;
+        $ratings = collect();
+
+        if ($profile->exists) {
+            $ratings = ConsultationRating::whereHas('consultation', function($q) use ($profile) {
+                $q->where('consultant_profile_id', $profile->id);
+            })
+            ->where('rater_type', 'customer')
+            ->get();
+
+            if ($ratings->count() > 0) {
+                $averageRating = round($ratings->avg('rating'), 1);
+                $totalRatings = $ratings->count();
+            }
+        }
+
+        return view('consultant-folder.profile', compact('profile', 'averageRating', 'totalRatings'));
     }
 
     public function saveProfile(Request $request)
@@ -48,7 +67,8 @@ class ConsultantProfileController extends Controller
             'phone_number' => 'required|string|max:20',
             'age' => 'required|integer|min:18|max:120',
             'sex' => 'required|in:Male,Female,Other',
-            'expertise' => 'required|string|max:255',
+            'expertise' => 'required|array|min:1|max:5',
+            'expertise.*' => 'in:Technology & IT Support,E-commerce Business,Marketing Business,Education & Career Coaching,Financial Business',
             'address' => 'required|string|max:500',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'resume' => 'required|file|mimes:pdf,doc,docx|max:5120',
@@ -68,7 +88,7 @@ class ConsultantProfileController extends Controller
             'sex' => $validated['sex'],
             'phone_number' => $validated['phone_number'],
             'email' => $validated['email'],
-            'expertise' => $validated['expertise'],
+            'expertise' => implode(', ', $validated['expertise']),
             'resume_path' => $resumePath,
             'is_verified' => false,
         ];
@@ -95,7 +115,8 @@ class ConsultantProfileController extends Controller
             'phone_number' => 'nullable|string|max:20',
             'age' => 'nullable|integer|min:18|max:100',
             'sex' => 'nullable|in:Male,Female,Other',
-            'expertise' => 'required|string|max:255',
+            'expertise' => 'required|array|min:1|max:5',
+            'expertise.*' => 'in:Technology & IT Support,E-commerce Business,Marketing Business,Education & Career Coaching,Financial Business',
             'address' => 'nullable|string|max:500',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
@@ -107,7 +128,7 @@ class ConsultantProfileController extends Controller
             'phone_number' => $request->phone_number,
             'age' => $request->age,
             'sex' => $request->sex,
-            'expertise' => $request->expertise,
+            'expertise' => implode(', ', $request->expertise),
             'address' => $request->address,
             'rules_accepted' => true,
         ];

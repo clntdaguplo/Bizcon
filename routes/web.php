@@ -31,6 +31,24 @@ Route::get('/consultants', function() {
         ->orderByDesc('updated_at')
         ->paginate(12)
         ->appends(['q' => $query]);
+    
+    // Calculate average ratings for each consultant
+    foreach ($consultants as $consultant) {
+        $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($consultant) {
+            $q->where('consultant_profile_id', $consultant->id);
+        })
+        ->where('rater_type', 'customer')
+        ->get();
+        
+        if ($ratings->count() > 0) {
+            $consultant->average_rating = round($ratings->avg('rating'), 1);
+            $consultant->total_ratings = $ratings->count();
+        } else {
+            $consultant->average_rating = null;
+            $consultant->total_ratings = 0;
+        }
+    }
+    
     return view('consultants', compact('consultants', 'query'));
 })->name('consultants');
 
@@ -83,12 +101,18 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
 
     Route::post('/customer/new-consult', [ConsultationController::class, 'store'])->name('customer.consultations.store');
 
-    Route::get('/customer/my-consults', function() {
-        return view('customer-folder.my-consults');
-    })->name('customer.my-consults');
-    Route::get('/customer/my_consults', function() {
-        return view('customer-folder.my-consults');
-    })->name('customer.my_consults');
+    Route::get('/customer/my-consults', [\App\Http\Controllers\ConsultationController::class, 'customerHistory'])->name('customer.my-consults');
+    Route::get('/customer/my_consults', [\App\Http\Controllers\ConsultationController::class, 'customerHistory'])->name('customer.my_consults');
+    
+    // Client response to consultant's proposed schedule
+    Route::post('/customer/consultations/{id}/respond-proposal', [ConsultationController::class, 'respondToProposal'])->name('customer.consultations.respond-proposal');
+    
+    // Download consultation report
+    Route::get('/customer/consultations/{id}/report', [ConsultationController::class, 'downloadReport'])->name('customer.consultations.report');
+    
+    // Rating routes
+    Route::get('/customer/consultations/{id}/rate', [ConsultationController::class, 'showRatingForm'])->name('customer.consultations.rate');
+    Route::post('/customer/consultations/{id}/rate', [ConsultationController::class, 'saveRating'])->name('consultation.rating.save');
 
     Route::get('/customer/profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::put('/customer/profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
@@ -110,6 +134,10 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     Route::get('/consultant/profile', [ConsultantProfileController::class, 'profile'])->name('consultant.profile');
     Route::post('/consultant/profile', [ConsultantProfileController::class, 'saveProfile'])->name('consultant.profile.save');
 
+    // Google OAuth connect for consultants
+    Route::get('/google/connect', [\App\Http\Controllers\GoogleController::class, 'connect'])->name('google.connect');
+    Route::get('/google/callback', [\App\Http\Controllers\GoogleController::class, 'callback'])->name('google.callback');
+
     // Consultant: inbox of consultation requests
     Route::get('/consultant/consultations', [ConsultationController::class, 'consultantInbox'])->name('consultant.consultations');
     
@@ -123,10 +151,29 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
             ->get();
         return view('consultant-folder.respond', compact('pending_consultations'));
     })->name('consultant.respond');
+
+    // Open a single consultation request to schedule meeting
+    Route::get('/consultant/consultations/{id}/open', [\App\Http\Controllers\ConsultationController::class, 'openRequest'])->name('consultant.consultations.open');
     
     Route::get('/consultant/profile/manage', function() {
         $profile = \App\Models\ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
-        return view('consultant-folder.profile', compact('profile'));
+
+        // Calculate ratings for this consultant (same logic as in ConsultantProfileController@profile)
+        $averageRating = null;
+        $totalRatings = 0;
+
+        $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($profile) {
+                $q->where('consultant_profile_id', $profile->id);
+            })
+            ->where('rater_type', 'customer')
+            ->get();
+
+        if ($ratings->count() > 0) {
+            $averageRating = round($ratings->avg('rating'), 1);
+            $totalRatings = $ratings->count();
+        }
+
+        return view('consultant-folder.profile', compact('profile', 'averageRating', 'totalRatings'));
     })->name('consultant.profile.manage');
     
     Route::put('/consultant/profile/update', [ConsultantProfileController::class, 'updateProfile'])->name('consultant.profile.update');
@@ -136,6 +183,17 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     Route::post('/consultant/consultations/{id}/reject', [ConsultationController::class, 'rejectConsultation'])->name('consultant.consultations.reject');
     Route::post('/consultant/consultations/{id}/complete', [ConsultationController::class, 'completeConsultation'])->name('consultant.consultations.complete');
     Route::post('/consultant/consultations/{id}/respond', [ConsultationController::class, 'respondToConsultation'])->name('consultant.consultations.respond');
+    
+    // Report routes
+    // Consultant views to create/edit report (form)
+    Route::get('/consultant/consultations/{id}/report', [ConsultationController::class, 'showReportForm'])->name('consultant.consultations.report');
+    // Consultant views final report (PDF-style page) in a new tab
+    Route::get('/consultant/consultations/{id}/report/view', [ConsultationController::class, 'downloadReport'])->name('consultant.consultations.report.view');
+    Route::post('/consultant/consultations/{id}/report', [ConsultationController::class, 'saveReport'])->name('consultant.consultations.save-report');
+    
+    // Rating routes
+    Route::get('/consultant/consultations/{id}/rate', [ConsultationController::class, 'showRatingForm'])->name('consultant.consultations.rate');
+    Route::post('/consultant/consultations/{id}/rate', [ConsultationController::class, 'saveRating'])->name('consultation.rating.save');
 });
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin');
@@ -145,6 +203,10 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/admin/consultants', [AdminConsultantController::class, 'consultants'])->name('admin.consultants');
     Route::get('/admin/consultants/{id}', [AdminConsultantController::class, 'show'])->name('admin.consultants.show');
     Route::get('/admin/customers', [AdminConsultantController::class, 'customers'])->name('admin.customers');
+    Route::get('/admin/customers/{id}', function ($id) {
+        $customer = \App\Models\User::where('role', 'Customer')->findOrFail($id);
+        return view('admin-folder.customer-profile', compact('customer'));
+    })->name('admin.customers.show');
     
     // New admin pages
     Route::get('/admin/manage-users', function() {

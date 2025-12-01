@@ -42,9 +42,21 @@
                 <div class="space-y-3">
                     @forelse($recent_consultations ?? [] as $consultation)
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
+                            <div class="flex-1">
                                 <div class="font-medium text-gray-900">{{ $consultation->customer->name ?? 'Unknown Customer' }}</div>
                                 <div class="text-sm text-gray-600">{{ $consultation->topic }}</div>
+                                @if($consultation->status === 'Completed' && $consultation->client_readiness_rating)
+                                    <div class="flex items-center mt-1">
+                                        <span class="text-xs text-gray-500 mr-1">Readiness:</span>
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $consultation->client_readiness_rating)
+                                                <span class="text-yellow-500 text-xs">⭐</span>
+                                            @else
+                                                <span class="text-gray-300 text-xs">☆</span>
+                                            @endif
+                                        @endfor
+                                    </div>
+                                @endif
                             </div>
                             <span class="px-2 py-1 text-xs rounded-full 
                                 @if($consultation->status === 'Pending') bg-yellow-100 text-yellow-800

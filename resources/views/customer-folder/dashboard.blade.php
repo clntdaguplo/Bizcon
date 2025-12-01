@@ -18,15 +18,15 @@
 
             <!-- Quick Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center shadow-sm">
                     <div class="text-2xl font-bold text-blue-600">0</div>
                     <div class="text-sm text-blue-800">Active Bookings</div>
                 </div>
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center shadow-sm">
                     <div class="text-2xl font-bold text-green-600">0</div>
                     <div class="text-sm text-green-800">Completed Sessions</div>
                 </div>
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center shadow-sm">
                     <div class="text-2xl font-bold text-purple-600">{{ $totalVerifiedConsultants ?? 0 }}</div>
                     <div class="text-sm text-purple-800">Consultants Available</div>
                 </div>
@@ -72,12 +72,12 @@
             </div>
 
             <!-- Available Consultants Preview -->
-            <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-lg">
                 <h3 class="text-lg font-semibold mb-4">Featured Consultants</h3>
                 @if(isset($featuredConsultants) && $featuredConsultants->count() > 0)
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($featuredConsultants as $c)
-                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-blue-300 transition">
                                 <div class="flex items-center mb-2">
                                     <div class="w-8 h-8 rounded-full mr-3 overflow-hidden bg-gray-300">
                                         @if($c->avatar_path)

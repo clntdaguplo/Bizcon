@@ -73,66 +73,12 @@
                                 </div>
                             </div>
 
-                            <!-- Response Form -->
+                            <!-- Open Request (go to dedicated page to schedule Google Meet) -->
                             <div class="border-t border-gray-200 pt-6">
-                                <h4 class="font-medium text-gray-900 mb-4">Your Response:</h4>
-                                
-                                <form method="POST" action="{{ route('consultant.consultations.respond', $consultation->id) }}" class="space-y-4">
-                                    @csrf
-                                    
-                                    <!-- Response Type -->
-                                    <div class="flex space-x-4">
-                                        <label class="flex items-center">
-                                            <input type="radio" name="response_type" value="accept" class="mr-2 text-green-600" required>
-                                            <span class="text-green-700 font-medium">Accept Request</span>
-                                        </label>
-                                        <label class="flex items-center">
-                                            <input type="radio" name="response_type" value="reject" class="mr-2 text-red-600" required>
-                                            <span class="text-red-700 font-medium">Reject Request</span>
-                                        </label>
-                                    </div>
-
-                                    <!-- Response Message -->
-                                    <div>
-                                        <label for="response_message" class="block text-sm font-medium text-gray-700 mb-2">
-                                            Response Message (Optional)
-                                        </label>
-                                        <textarea name="response_message" id="response_message" rows="4" 
-                                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                  placeholder="Add a personal message to the customer..."></textarea>
-                                    </div>
-
-                                    <!-- Alternative Schedule (if accepting) -->
-                                    <div id="alternative_schedule" class="hidden">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            Alternative Schedule (if needed)
-                                        </label>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label for="alternative_date" class="block text-xs text-gray-600 mb-1">Date</label>
-                                                <input type="date" name="alternative_date" id="alternative_date" 
-                                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                                            <div>
-                                                <label for="alternative_time" class="block text-xs text-gray-600 mb-1">Time</label>
-                                                <input type="time" name="alternative_time" id="alternative_time" 
-                                                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Submit Buttons -->
-                                    <div class="flex justify-end space-x-3 pt-4">
-                                        <button type="button" onclick="resetForm()" 
-                                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                                            Reset
-                                        </button>
-                                        <button type="submit" 
-                                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                                            Submit Response
-                                        </button>
-                                    </div>
-                                </form>
+                                <div class="flex justify-end">
+                                    <a href="{{ route('consultant.consultations.open', $consultation->id) }}" 
+                                       class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Open Request</a>
+                                </div>
                             </div>
                         </div>
                     </div>

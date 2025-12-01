@@ -63,6 +63,24 @@ class AdminConsultantController extends Controller
     public function show($id)
     {
         $profile = ConsultantProfile::with('user')->findOrFail($id);
+        
+        // Calculate average ratings from clients
+        $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($profile) {
+            $q->where('consultant_profile_id', $profile->id);
+        })
+        ->where('rater_type', 'customer')
+        ->get();
+        
+        if ($ratings->count() > 0) {
+            $profile->average_rating = round($ratings->avg('rating'), 1);
+            $profile->total_ratings = $ratings->count();
+            $profile->ratings = $ratings;
+        } else {
+            $profile->average_rating = null;
+            $profile->total_ratings = 0;
+            $profile->ratings = collect();
+        }
+        
         return view('admin-folder.consultant-show', compact('profile'));
     }
 }

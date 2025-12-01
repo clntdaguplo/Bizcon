@@ -133,7 +133,9 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-900">View Profile</button>
+                                    <a href="{{ route('admin.customers.show', $customer->id) }}" class="text-blue-600 hover:text-blue-900">
+                                        View Profile
+                                    </a>
                                     <button class="text-green-600 hover:text-green-900">Message</button>
                                     <button class="text-red-600 hover:text-red-900">Suspend</button>
                                 </div>

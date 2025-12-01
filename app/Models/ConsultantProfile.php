@@ -14,6 +14,7 @@ class ConsultantProfile extends Model
         'user_id', 'address', 'age', 'sex', 'resume_path', 'avatar_path', 'is_verified',
         'rules_accepted', 'full_name', 'phone_number', 'email', 'expertise',
         'is_rejected', 'admin_note',
+        'google_token',
     ];
 
     public function user(): BelongsTo

@@ -25,13 +25,26 @@
         <div class="flex-1">
             <h2 class="text-2xl font-bold text-gray-900">{{ $profile->full_name ?? $profile->user->name }}</h2>
             <p class="text-gray-600">{{ $profile->email ?? $profile->user->email }}</p>
-            <div class="mt-2">
+            <div class="mt-2 flex items-center space-x-3">
                 @if($profile->is_verified)
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>
                 @elseif($profile->is_rejected)
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
                 @else
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                @endif
+                @if($profile->average_rating)
+                    <div class="flex items-center">
+                        @for($i = 1; $i <= 5; $i++)
+                            @if($i <= round($profile->average_rating))
+                                <span class="text-yellow-500 text-lg">⭐</span>
+                            @else
+                                <span class="text-gray-300 text-lg">☆</span>
+                            @endif
+                        @endfor
+                    </div>
+                @else
+                    <span class="text-xs text-gray-500">No ratings yet</span>
                 @endif
             </div>
         </div>
@@ -54,6 +67,25 @@
         <div class="bg-white rounded-lg shadow p-6 space-y-4">
             <h3 class="text-lg font-semibold text-gray-900">Professional</h3>
             <div><span class="text-gray-500">Expertise:</span> <span class="font-medium">{{ $profile->expertise ?? '—' }}</span></div>
+            <div>
+                <span class="text-gray-500">Client Rating:</span>
+                <div class="mt-1">
+                    @if($profile->average_rating)
+                        <div class="flex items-center">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= round($profile->average_rating))
+                                    <span class="text-yellow-500 text-xl">⭐</span>
+                                @else
+                                    <span class="text-gray-300 text-xl">☆</span>
+                                @endif
+                            @endfor
+                            <span class="ml-2 text-sm text-gray-700">({{ $profile->average_rating }}/5 from {{ $profile->total_ratings }} {{ $profile->total_ratings == 1 ? 'rating' : 'ratings' }})</span>
+                        </div>
+                    @else
+                        <span class="text-gray-500 text-sm">No ratings yet</span>
+                    @endif
+                </div>
+            </div>
             <div class="flex items-center justify-between">
                 <div>
                     <span class="text-gray-500">Resume:</span>
