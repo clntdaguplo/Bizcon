@@ -114,32 +114,11 @@
                         </div>
                         
                         <div class="mt-4 lg:mt-0 lg:ml-6 flex flex-col space-y-2">
-                            @if($consultation->status === 'Pending')
-                                <div class="flex space-x-2">
-                                    <form method="POST" action="{{ route('consultant.consultations.accept', $consultation->id) }}" class="inline">
-                                        @csrf
-                                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                                            Accept
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ route('consultant.consultations.reject', $consultation->id) }}" class="inline">
-                                        @csrf
-                                        <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">
-                                            Reject
-                                        </button>
-                                    </form>
-                                </div>
-                            @elseif($consultation->status === 'Accepted')
+                            @if($consultation->status === 'Pending' || $consultation->status === 'Accepted')
                                 <a href="{{ route('consultant.consultations.open', $consultation->id) }}" 
                                    class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                                     Open Request
                                 </a>
-                                <form method="POST" action="{{ route('consultant.consultations.complete', $consultation->id) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors w-full mt-2">
-                                        Mark Complete
-                                    </button>
-                                </form>
                             @elseif($consultation->status === 'Completed')
                                 <div class="space-y-2">
                                     @if($consultation->consultation_summary)
