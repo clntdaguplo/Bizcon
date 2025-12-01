@@ -42,6 +42,12 @@ class ConsultationController extends Controller
             ->where('consultant_profile_id', $profile->id)
             ->orderByDesc('created_at')
             ->paginate(15);
+
+        // Auto-expire old pending/proposed requests based on preferred date
+        foreach ($consultations as $consultation) {
+            $consultation->markExpiredIfPastPreferredDate();
+        }
+
         return view('consultant-folder.consultations', compact('consultations'));
     }
 
@@ -52,6 +58,11 @@ class ConsultationController extends Controller
             ->where('customer_id', Auth::id())
             ->orderByDesc('created_at')
             ->paginate(12);
+
+        // Auto-expire old pending/proposed requests based on preferred date
+        foreach ($consultations as $consultation) {
+            $consultation->markExpiredIfPastPreferredDate();
+        }
 
         return view('customer-folder.my-consults', compact('consultations'));
     }
@@ -267,6 +278,38 @@ class ConsultationController extends Controller
         $consultation->save();
 
         return redirect()->route('customer.my-consults')->with('success', $message);
+    }
+
+    /**
+     * Customer cancels their own consultation request (if not completed/rejected)
+     */
+    public function cancelByCustomer($id)
+    {
+        $consultation = Consultation::where('customer_id', Auth::id())->findOrFail($id);
+
+        if (in_array($consultation->status, ['Completed', 'Cancelled', 'Rejected'], true)) {
+            return back()->withErrors(['error' => 'You can no longer cancel this consultation.']);
+        }
+
+        $consultation->status = 'Cancelled';
+        $consultation->proposal_status = null;
+        $consultation->proposed_date = null;
+        $consultation->proposed_time = null;
+        $consultation->save();
+
+        // Notify consultant about cancellation if a consultant profile is linked
+        $profile = $consultation->consultantProfile;
+        if ($profile) {
+            $this->createNotification(
+                $consultation,
+                $profile->user_id,
+                'status_change',
+                'Consultation Cancelled',
+                "The client cancelled the consultation request for '{$consultation->topic}'."
+            );
+        }
+
+        return back()->with('success', 'Your consultation has been cancelled.');
     }
 
     /**
@@ -491,6 +534,13 @@ class ConsultationController extends Controller
         $consultation = Consultation::with(['customer', 'consultantProfile'])
             ->where('consultant_profile_id', $profile->id)
             ->findOrFail($id);
+
+        // If this request is already past its preferred date, mark as expired and block actions
+        $consultation->markExpiredIfPastPreferredDate();
+        if ($consultation->status === 'Expired') {
+            return redirect()->route('consultant.consultations')
+                ->withErrors(['error' => 'This consultation request has expired and can no longer be accepted.']);
+        }
 
         return view('consultant-folder.open-request', compact('consultation'));
     }

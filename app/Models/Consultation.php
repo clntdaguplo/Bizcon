@@ -105,6 +105,26 @@ class Consultation extends Model
 
         return $query->exists();
     }
+
+    /**
+     * Mark this consultation as expired if the preferred date is in the past,
+     * there's no scheduled date, and the status is still pending/proposed.
+     */
+    public function markExpiredIfPastPreferredDate(): void
+    {
+        if (
+            $this->preferred_date &&
+            $this->preferred_date->isPast() &&
+            in_array($this->status, ['Pending', 'Proposed'], true) &&
+            !$this->scheduled_date
+        ) {
+            $this->status = 'Expired';
+            $this->proposal_status = null;
+            $this->proposed_date = null;
+            $this->proposed_time = null;
+            $this->save();
+        }
+    }
 }
 
 

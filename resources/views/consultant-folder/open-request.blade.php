@@ -44,7 +44,7 @@
                             <input type="radio" name="response_type" value="accept" class="mr-3" required>
                             <div>
                                 <span class="text-green-700 font-semibold">✅ Accept (same date & time)</span>
-                                <p class="text-sm text-gray-600">Accept the customer's preferred schedule or choose an alternative</p>
+                                <p class="text-sm text-gray-600">Confirm the consultation using the client's original date and time.</p>
                             </div>
                         </label>
                         <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" id="propose-option">
@@ -69,17 +69,21 @@
                     <textarea name="response_message" rows="4" class="w-full border rounded px-3 py-2" placeholder="Add a message to the client..."></textarea>
                 </div>
 
-                <!-- Accept Schedule Box -->
+                <!-- Accept Schedule Box (read-only preview of chosen date/time) -->
                 <div id="accept-schedule-box" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Schedule (defaults to customer's preferred)</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Scheduled Date & Time</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">Date</label>
-                            <input type="date" name="alternative_date" class="w-full border rounded px-3 py-2" value="{{ $consultation->preferred_date }}" min="{{ date('Y-m-d') }}">
+                            <span class="block text-xs text-gray-500 mb-1">Date</span>
+                            <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
+                                {{ $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') : 'Not specified' }}
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-600 mb-1">Time</label>
-                            <input type="time" name="alternative_time" class="w-full border rounded px-3 py-2" value="{{ $consultation->preferred_time }}">
+                            <span class="block text-xs text-gray-500 mb-1">Time</span>
+                            <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
+                                {{ $consultation->preferred_time ? \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') : 'Not specified' }}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -49,6 +49,8 @@
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Accepted</span>
                                     @elseif($status === 'Proposed' || $hasProposal)
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">🔄 Proposal Pending</span>
+                                    @elseif($status === 'Expired')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">Expired</span>
                                     @elseif($status === 'Cancelled')
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Cancelled</span>
                                     @elseif($status === 'Rejected')
@@ -135,6 +137,18 @@
                                                     <p class="text-green-800">✅ You have rated this consultation</p>
                                                 </div>
                                             @endif
+                                        @endif
+
+                                        @if(in_array($consultation->status, ['Pending', 'Proposed'], true))
+                                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                                <form method="POST" action="{{ route('customer.consultations.cancel', $consultation->id) }}" class="inline-block"
+                                                      onsubmit="return confirm('Are you sure you want to cancel this consultation?');">
+                                                    @csrf
+                                                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors">
+                                                        ❌ Cancel Consultation
+                                                    </button>
+                                                </form>
+                                            </div>
                                         @endif
                                     </div>
                                 </td>
