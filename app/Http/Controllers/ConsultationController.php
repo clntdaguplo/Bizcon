@@ -313,6 +313,80 @@ class ConsultationController extends Controller
     }
 
     /**
+     * Show edit form for customer's consultation request
+     */
+    public function edit($id)
+    {
+        $consultation = Consultation::where('customer_id', Auth::id())
+            ->with(['consultantProfile.user'])
+            ->findOrFail($id);
+
+        // Only allow editing if status is Pending, Proposed, or Expired
+        if (!in_array($consultation->status, ['Pending', 'Proposed', 'Expired'], true)) {
+            return redirect()->route('customer.my-consults')
+                ->withErrors(['error' => 'You can only edit consultations that are Pending, Proposed, or Expired.']);
+        }
+
+        return view('customer-folder.edit-consult', compact('consultation'));
+    }
+
+    /**
+     * Update customer's consultation request
+     */
+    public function update(Request $request, $id)
+    {
+        $consultation = Consultation::where('customer_id', Auth::id())->findOrFail($id);
+
+        // Only allow editing if status is Pending, Proposed, or Expired
+        if (!in_array($consultation->status, ['Pending', 'Proposed', 'Expired'], true)) {
+            return redirect()->route('customer.my-consults')
+                ->withErrors(['error' => 'You can only edit consultations that are Pending, Proposed, or Expired.']);
+        }
+
+        $validated = $request->validate([
+            'topic' => 'required|string|max:255',
+            'details' => 'nullable|string',
+            'preferred_date' => 'nullable|date|after_or_equal:today',
+            'preferred_time' => 'nullable',
+        ]);
+
+        // Update consultation fields
+        $consultation->topic = $validated['topic'];
+        $consultation->details = $validated['details'] ?? null;
+        $consultation->preferred_date = $validated['preferred_date'] ?? null;
+        $consultation->preferred_time = $validated['preferred_time'] ?? null;
+
+        // If status was Expired, reset to Pending when updated
+        if ($consultation->status === 'Expired') {
+            $consultation->status = 'Pending';
+        }
+
+        // Clear any pending proposals when customer updates their request
+        if ($consultation->proposal_status === 'pending') {
+            $consultation->proposal_status = null;
+            $consultation->proposed_date = null;
+            $consultation->proposed_time = null;
+        }
+
+        $consultation->save();
+
+        // Notify consultant about the update
+        $profile = $consultation->consultantProfile;
+        if ($profile) {
+            $this->createNotification(
+                $consultation,
+                $profile->user_id,
+                'status_change',
+                'Consultation Request Updated',
+                "The client has updated their consultation request for '{$consultation->topic}'. Please review the new details."
+            );
+        }
+
+        return redirect()->route('customer.my-consults')
+            ->with('success', 'Your consultation request has been updated successfully.');
+    }
+
+    /**
      * Create Google Meet link when both parties agree
      */
     protected function createGoogleMeetLink($consultation, $consultantProfile)
