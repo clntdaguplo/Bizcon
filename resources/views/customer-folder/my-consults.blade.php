@@ -139,8 +139,12 @@
                                             @endif
                                         @endif
 
-                                        @if(in_array($consultation->status, ['Pending', 'Proposed'], true))
-                                            <div class="border-t border-gray-200 pt-4 mt-4">
+                                        @if(in_array($consultation->status, ['Pending', 'Proposed', 'Expired'], true))
+                                            <div class="border-t border-gray-200 pt-4 mt-4 flex gap-3">
+                                                <a href="{{ route('customer.consultations.edit', $consultation->id) }}"
+                                                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                                                    ✏️ Edit Request
+                                                </a>
                                                 <form method="POST" action="{{ route('customer.consultations.cancel', $consultation->id) }}" class="inline-block"
                                                       onsubmit="return confirm('Are you sure you want to cancel this consultation?');">
                                                     @csrf
