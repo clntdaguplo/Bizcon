@@ -6,7 +6,7 @@
     <title>Log In - BizConsult</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-900">
 
     <!-- Navbar -->
     <header class="bg-gray-900 bg-opacity-80 fixed top-0 left-0 w-full z-20">
@@ -32,57 +32,108 @@
     </header>
 
     <!-- Login Section -->
-    <main class="min-h-screen pt-24 relative bg-cover bg-center flex items-center justify-center px-4"
-          style="background-image: url('{{ asset('images/background.png') }}');">
-
-        <!-- Overlay -->
-        <div class="absolute inset-0 bg-black bg-opacity-50 z-0"></div>
+    <main
+        class="min-h-screen pt-24 relative bg-cover bg-center flex items-center justify-center px-4"
+        style="background-image: url('{{ asset('images/background.png') }}');">
 
         <!-- Login Form -->
-        <div class="relative z-10 w-full max-w-md bg-white bg-opacity-30 backdrop-blur-md p-8 rounded-xl shadow-xl border border-white border-opacity-20">
-            <h2 class="text-3xl font-bold text-center text-gray-900 mb-6">Welcome Back</h2>
+        <div class="relative z-10 w-full max-w-md bg-slate-900/60 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-slate-700/60">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-white mb-2">Welcome back</h2>
+                <p class="text-sm text-slate-300">Sign in to continue to your BizConsult dashboard.</p>
+            </div>
 
             <form action="{{ route('login') }}" method="POST" class="space-y-5">
                 @csrf
 
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input type="email" name="email" id="email" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:border-blue-400">
+                <div class="space-y-1">
+                    <label for="email" class="block text-sm font-medium text-slate-100">Email address</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12H8m13-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            required
+                            autocomplete="email"
+                            placeholder="you@example.com"
+                            class="block w-full rounded-xl border border-slate-600/60 bg-slate-900/70 pl-9 pr-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/80 focus:border-sky-400 transition"
+                        >
+                    </div>
                 </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" name="password" id="password" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:border-blue-400">
+                <div class="space-y-1">
+                    <label for="password" class="block text-sm font-medium text-slate-100">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c.667 0 2-.4 2-2s-1.333-2-2-2-2 .4-2 2 1.333 2 2 2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 19a10.36 10.36 0 0115 0" />
+                            </svg>
+                        </span>
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            required
+                            autocomplete="current-password"
+                            placeholder="Enter your password"
+                            class="block w-full rounded-xl border border-slate-600/60 bg-slate-900/70 pl-9 pr-10 py-2.5 text-sm text-slate-100 placeholder-slate-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500/80 focus:border-sky-400 transition"
+                        >
+                        <button type="button"
+                                id="toggle-login-password"
+                                class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-200 text-xs">
+                            Show
+                        </button>
+                    </div>
                 </div>
 
-                <div class="flex items-center justify-between text-sm text-black-600">
-                    <label class="flex items-center space-x-2">
-                        <input type="checkbox" class="rounded" name="remember">
+                <div class="flex items-center justify-between text-sm text-slate-300">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" class="rounded border-slate-500 bg-slate-900 text-sky-500 focus:ring-sky-500" name="remember">
                         <span>Remember me</span>
                     </label>
-                    <a href="#" class="text-blue-500 hover:underline">Forgot Password?</a>
+                    <a href="#" class="text-sky-400 hover:text-sky-300 hover:underline">Forgot password?</a>
                 </div>
 
                 <button type="submit"
-                        class="w-full py-2 px-4 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition">
-                    Log In
+                        class="w-full py-2.5 px-4 bg-sky-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-sky-500/30 hover:bg-sky-400 hover:shadow-sky-400/40 transition">
+                    Log in
                 </button>
 
                
             </form>
 
-            <p class="text-center text-sm text-black-700 mt-6">
+            <p class="text-center text-sm text-slate-300 mt-6">
                 Don’t have an account?
-                <a href="{{ route('signup') }}" class="text-blue-500 hover:underline">Sign Up</a>
+                <a href="{{ route('signup') }}" class="text-sky-400 hover:text-sky-300 hover:underline">Sign up</a>
             </p>
         </div>
     </main>
 
-    <footer class="bg-gray-900 bg-opacity-80 text-gray-300 py-6 text-center">
-        <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
+    <footer class="bg-slate-950/80 text-slate-300 py-6 text-center">
+        <p class="text-xs tracking-wide uppercase text-slate-500 mb-1">&copy; {{ date('Y') }} BizConsult</p>
+        <p class="text-sm text-slate-400">Empowering businesses through expert consulting.</p>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('toggle-login-password');
+            const passwordInput = document.getElementById('password');
+
+            if (toggleBtn && passwordInput) {
+                toggleBtn.addEventListener('click', function () {
+                    const isHidden = passwordInput.type === 'password';
+                    passwordInput.type = isHidden ? 'text' : 'password';
+                    this.textContent = isHidden ? 'Hide' : 'Show';
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>
