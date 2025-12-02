@@ -13,6 +13,13 @@ class ConsultantProfileController extends Controller
     public function rules()
     {
         $profile = ConsultantProfile::firstOrNew(['user_id' => Auth::id()]);
+        $rulesAcceptedSession = session('consultant_rules_accepted', false);
+
+        // If rules already accepted (in DB or this session), skip this page
+        if (($profile->exists && $profile->rules_accepted) || $rulesAcceptedSession) {
+            return redirect()->route('consultant.profile');
+        }
+
         return view('consultant-folder.rules', compact('profile'));
     }
 
