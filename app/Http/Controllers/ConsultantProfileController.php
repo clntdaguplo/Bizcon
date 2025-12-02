@@ -13,10 +13,11 @@ class ConsultantProfileController extends Controller
     public function rules()
     {
         $profile = ConsultantProfile::firstOrNew(['user_id' => Auth::id()]);
-        $rulesAcceptedSession = session('consultant_rules_accepted', false);
+        $user = Auth::user();
+        $userAccepted = $user->consultant_rules_accepted ?? false;
 
-        // If rules already accepted (in DB or this session), skip this page
-        if (($profile->exists && $profile->rules_accepted) || $rulesAcceptedSession) {
+        // If rules already accepted (in DB or on the user record), skip this page
+        if (($profile->exists && $profile->rules_accepted) || $userAccepted) {
             return redirect()->route('consultant.profile');
         }
 
@@ -31,8 +32,16 @@ class ConsultantProfileController extends Controller
             'accept.accepted' => 'You must accept the rules to proceed.',
         ]);
 
-        // Do not create a DB row yet (required columns would fail). Mark acceptance in session.
-        session(['consultant_rules_accepted' => true]);
+        // Persist acceptance on the profile if it exists; otherwise persist on the user record
+        $profile = ConsultantProfile::where('user_id', Auth::id())->first();
+        if ($profile) {
+            $profile->rules_accepted = true;
+            $profile->save();
+        }
+
+        $user = Auth::user();
+        $user->consultant_rules_accepted = true;
+        $user->save();
 
         return redirect()->route('consultant.profile');
     }
@@ -40,9 +49,9 @@ class ConsultantProfileController extends Controller
     public function profile()
     {
         $profile = ConsultantProfile::firstOrNew(['user_id' => Auth::id()]);
-        // If no persisted profile yet, rely on session to allow reaching the profile page after accepting rules
-        $rulesAcceptedSession = session('consultant_rules_accepted', false);
-        if ((!$profile->exists || !$profile->rules_accepted) && !$rulesAcceptedSession) {
+        // If no persisted profile yet, rely on the user's flag to allow reaching the profile page after accepting rules
+        $userAccepted = Auth::user()->consultant_rules_accepted ?? false;
+        if ((!$profile->exists || !$profile->rules_accepted) && !$userAccepted) {
             return redirect()->route('consultant.rules');
         }
 
@@ -108,8 +117,12 @@ class ConsultantProfileController extends Controller
             ['user_id' => Auth::id()],
             $createData
         );
-
-        session()->forget('consultant_rules_accepted');
+        // Make sure user's flag is set when profile is created
+        $user = Auth::user();
+        if (! $user->consultant_rules_accepted) {
+            $user->consultant_rules_accepted = true;
+            $user->save();
+        }
 
         return redirect()->route('dashboard.consultant')->with('success', 'Profile submitted. Pending approval.');
     }

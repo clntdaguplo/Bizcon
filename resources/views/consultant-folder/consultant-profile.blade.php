@@ -20,8 +20,14 @@
 
     <main class="min-h-screen pt-32 px-6">
         <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
-            <h1 class="text-3xl font-bold mb-6">Consultant Profile</h1>
-            <p class="text-gray-700 mb-6">Complete your profile to proceed.</p>
+            <h1 class="text-3xl font-bold mb-4">Consultant Profile</h1>
+            <p class="text-gray-700 mb-4">
+                Please complete your consultant profile. Your information helps clients understand your expertise.
+            </p>
+            <div class="mb-6 p-4 rounded-lg border border-yellow-200 bg-yellow-50 text-sm text-yellow-900">
+                <strong>Note:</strong> You must finish your profile and submit all required details to
+                <span class="font-semibold">access and respond to consultation requests.</span>
+            </div>
 
             @if ($errors->any())
                 <div class="mb-6 p-4 bg-red-100 text-red-700 rounded">
