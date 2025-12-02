@@ -58,7 +58,58 @@
             <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
                 <div class="flex items-center justify-between">
                     <h1 class="text-2xl font-semibold text-gray-900">@yield('page-title', 'Dashboard')</h1>
-                    <div class="text-sm text-gray-500">{{ now()->format('l, F j, Y') }}</div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-500 hidden sm:block">
+                            {{ now()->format('l, F j, Y') }}
+                        </div>
+                        @php
+                            $customerNotifications = \App\Models\ConsultationNotification::where('user_id', Auth::id())
+                                ->orderByDesc('sent_at')
+                                ->limit(10)
+                                ->get();
+                            $customerUnreadCount = $customerNotifications->where('is_read', false)->count();
+                        @endphp
+                        <div class="relative">
+                            <button id="customer-notification-button"
+                                    class="relative inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z"/>
+                                </svg>
+                                @if($customerUnreadCount > 0)
+                                    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-red-500 text-white">
+                                        {{ $customerUnreadCount }}
+                                    </span>
+                                @endif
+                            </button>
+                            <div id="customer-notification-dropdown"
+                                 class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                                <div class="px-4 py-3 border-b border-gray-100">
+                                    <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                                    <p class="text-xs text-gray-500">
+                                        You have {{ $customerUnreadCount }} unread
+                                        {{ $customerUnreadCount === 1 ? 'notification' : 'notifications' }}.
+                                    </p>
+                                </div>
+                                <div class="max-h-80 overflow-y-auto px-3 py-2 space-y-2">
+                                    @forelse($customerNotifications as $notification)
+                                        <a href="{{ route('notifications.go', $notification->id) }}"
+                                           class="block px-3 py-3 text-sm {{ $notification->is_read ? 'bg-white' : 'bg-blue-50' }} border border-gray-200 rounded-md hover:bg-blue-100 transition-colors">
+                                            <p class="font-semibold text-gray-900">{{ $notification->title }}</p>
+                                            <p class="text-gray-600 mt-1 whitespace-pre-line">{{ $notification->message }}</p>
+                                            <p class="text-xs text-gray-400 mt-1">
+                                                {{ $notification->sent_at ? $notification->sent_at->format('M j, Y g:i A') : '' }}
+                                            </p>
+                                        </a>
+                                    @empty
+                                        <div class="px-3 py-6 text-center text-sm text-gray-500">
+                                            No notifications yet.
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -70,6 +121,27 @@
             </main>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('customer-notification-button');
+            const dropdown = document.getElementById('customer-notification-dropdown');
+
+            if (btn && dropdown) {
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (!dropdown.classList.contains('hidden')) {
+                        if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                            dropdown.classList.add('hidden');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
     @yield('scripts')
 </body>
 </html>

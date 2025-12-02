@@ -40,15 +40,26 @@
 
             <div class="flex items-center space-x-6">
 
-                <div class="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                <div class="h-24 w-24 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
                     @if ($profile->avatar_path)
                         <img src="{{ asset('storage/' . $profile->avatar_path) }}" alt="{{ $profile->full_name }}"
-                            class="h-full w-full object-cover">
+                             class="h-full w-full object-cover">
                     @else
-                        <img src="{{ asset('images/default-consultant.png') }}" alt="Default Consultant Avatar"
-                            class="h-full w-full object-cover">
+                        @php
+                            $name = $profile->full_name ?: ($profile->user->name ?? '');
+                            $initials = collect(explode(' ', trim($name)))
+                                ->filter()
+                                ->take(2)
+                                ->map(fn ($part) => mb_substr($part, 0, 1))
+                                ->implode('');
+                            if ($initials === '') {
+                                $initials = 'C';
+                            }
+                        @endphp
+                        <span class="text-2xl font-semibold text-gray-600 select-none">
+                            {{ mb_strtoupper($initials) }}
+                        </span>
                     @endif
-
                 </div>
                 <div class="flex-1">
                     <h1 class="text-2xl font-bold text-gray-900">{{ $profile->full_name }}</h1>
@@ -129,8 +140,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="full_name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        @php
+                            $defaultFullName = $profile->full_name ?: (auth()->user()->name ?? '');
+                        @endphp
                         <input type="text" name="full_name" id="full_name"
-                            value="{{ old('full_name', $profile->full_name) }}"
+                            value="{{ old('full_name', $defaultFullName) }}"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             required>
                         @error('full_name')
@@ -140,7 +154,10 @@
 
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" name="email" id="email" value="{{ old('email', $profile->email) }}"
+                        @php
+                            $defaultEmail = $profile->email ?: (auth()->user()->email ?? '');
+                        @endphp
+                        <input type="email" name="email" id="email" value="{{ old('email', $defaultEmail) }}"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             required>
                         @error('email')
