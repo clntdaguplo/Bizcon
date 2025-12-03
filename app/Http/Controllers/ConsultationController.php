@@ -38,27 +38,28 @@ class ConsultationController extends Controller
 
     public function consultantInbox()
     {
-        // query the consultant_profiles table in the bizcon database directly
-        // (returns a stdClass row; used only for presence / fields checks here)
-        $profile = DB::table('bizcon.consultant_profiles')->where('user_id', Auth::id())->first();
+        // Use Eloquent profile so we reliably see the is_verified flag and other fields.
+        $profile = ConsultantProfile::where('user_id', Auth::id())->first();
 
-        // define which fields mark the profile as "submitted" (adjust as needed)
+        // Consider profile "submitted" when admin has verified it.
+        // If not verified, fall back to basic required info.
         $isSubmitted = false;
         if ($profile) {
-            $isSubmitted = !empty($profile->full_name)
-                && !empty($profile->expertise)
-                && !empty($profile->avatar_path)
-                && !empty($profile->resume_path)
-                && !empty($profile->address)
-                && !empty($profile->age)
-                && !empty($profile->sex);
+            if (!empty($profile->is_verified)) {
+                $isSubmitted = true;
+            } else {
+                $isSubmitted = !empty($profile->full_name)
+                    && !empty($profile->expertise)
+                    && !empty($profile->address);
+            }
         }
 
-        $showProfileBanner = ! $isSubmitted; // true when profile missing/incomplete
+        // Show banner only when profile is NOT considered submitted
+        $showProfileBanner = ! $isSubmitted;
 
         if ($profile) {
             $consultations = Consultation::with('customer')
-                ->where('consultant_profile_id', $profile->id) // $profile->id works from the DB row
+                ->where('consultant_profile_id', $profile->id)
                 ->orderByDesc('created_at')
                 ->paginate(15);
 

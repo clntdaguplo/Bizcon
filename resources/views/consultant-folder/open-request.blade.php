@@ -53,87 +53,96 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('consultant.consultations.respond', $consultation->id) }}" class="space-y-4" id="responseForm">
-                @csrf
+            @if(in_array($consultation->status, ['Pending', 'Proposed']))
+                <form method="POST" action="{{ route('consultant.consultations.respond', $consultation->id) }}" class="space-y-4" id="responseForm">
+                    @csrf
 
-                @if($errors->has('conflict'))
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                        <strong>⚠️ Schedule Conflict:</strong> {{ $errors->first('conflict') }}
+                    @if($errors->has('conflict'))
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                            <strong>⚠️ Schedule Conflict:</strong> {{ $errors->first('conflict') }}
+                        </div>
+                    @endif
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Response</label>
+                        <div class="space-y-3">
+                            <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" id="accept-option">
+                                <input type="radio" name="response_type" value="accept" class="mr-3" required>
+                                <div>
+                                    <span class="text-green-700 font-semibold">✅ Accept (same date & time)</span>
+                                    <p class="text-sm text-gray-600">Confirm the consultation using the client's original date and time.</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" id="propose-option">
+                                <input type="radio" name="response_type" value="propose" class="mr-3" required>
+                                <div>
+                                    <span class="text-blue-700 font-semibold">🔄 Propose new schedule</span>
+                                    <p class="text-sm text-gray-600">Suggest a different date and time to the client</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="response_type" value="reject" class="mr-3" required>
+                                <div>
+                                    <span class="text-red-700 font-semibold">❌ Reject</span>
+                                    <p class="text-sm text-gray-600">Decline this consultation request</p>
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                @endif
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">Response</label>
-                    <div class="space-y-3">
-                        <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" id="accept-option">
-                            <input type="radio" name="response_type" value="accept" class="mr-3" required>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Message (optional)</label>
+                        <textarea name="response_message" rows="4" class="w-full border rounded px-3 py-2" placeholder="Add a message to the client..."></textarea>
+                    </div>
+
+                    <!-- Accept Schedule Box (read-only preview of chosen date/time) -->
+                    <div id="accept-schedule-box" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Scheduled Date & Time</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
                             <div>
-                                <span class="text-green-700 font-semibold">✅ Accept (same date & time)</span>
-                                <p class="text-sm text-gray-600">Confirm the consultation using the client's original date and time.</p>
+                                <span class="block text-xs text-gray-500 mb-1">Date</span>
+                                <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
+                                    {{ $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') : 'Not specified' }}
+                                </div>
                             </div>
-                        </label>
-                        <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" id="propose-option">
-                            <input type="radio" name="response_type" value="propose" class="mr-3" required>
                             <div>
-                                <span class="text-blue-700 font-semibold">🔄 Propose new schedule</span>
-                                <p class="text-sm text-gray-600">Suggest a different date and time to the client</p>
+                                <span class="block text-xs text-gray-500 mb-1">Time</span>
+                                <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
+                                    {{ $consultation->preferred_time ? \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') : 'Not specified' }}
+                                </div>
                             </div>
-                        </label>
-                        <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                            <input type="radio" name="response_type" value="reject" class="mr-3" required>
+                        </div>
+                    </div>
+
+                    <!-- Propose Schedule Box -->
+                    <div id="propose-schedule-box" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Proposed Schedule</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <span class="text-red-700 font-semibold">❌ Reject</span>
-                                <p class="text-sm text-gray-600">Decline this consultation request</p>
+                                <label class="block text-xs text-gray-600 mb-1">Date *</label>
+                                <input type="date" name="proposed_date" id="proposed_date" class="w-full border rounded px-3 py-2" min="{{ date('Y-m-d') }}">
                             </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Message (optional)</label>
-                    <textarea name="response_message" rows="4" class="w-full border rounded px-3 py-2" placeholder="Add a message to the client..."></textarea>
-                </div>
-
-                <!-- Accept Schedule Box (read-only preview of chosen date/time) -->
-                <div id="accept-schedule-box" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Scheduled Date & Time</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                        <div>
-                            <span class="block text-xs text-gray-500 mb-1">Date</span>
-                            <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
-                                {{ $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') : 'Not specified' }}
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">Time *</label>
+                                <input type="time" name="proposed_time" id="proposed_time" class="w-full border rounded px-3 py-2">
                             </div>
                         </div>
-                        <div>
-                            <span class="block text-xs text-gray-500 mb-1">Time</span>
-                            <div class="px-3 py-2 border border-gray-200 rounded bg-gray-50">
-                                {{ $consultation->preferred_time ? \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') : 'Not specified' }}
-                            </div>
-                        </div>
+                        <p class="text-xs text-gray-500 mt-2">The client will be notified and can accept or decline your proposed time.</p>
                     </div>
-                </div>
 
-                <!-- Propose Schedule Box -->
-                <div id="propose-schedule-box" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Proposed Schedule</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-gray-600 mb-1">Date *</label>
-                            <input type="date" name="proposed_date" id="proposed_date" class="w-full border rounded px-3 py-2" min="{{ date('Y-m-d') }}">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-600 mb-1">Time *</label>
-                            <input type="time" name="proposed_time" id="proposed_time" class="w-full border rounded px-3 py-2">
-                        </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <a href="{{ route('consultant.consultations') }}" class="px-4 py-2 border rounded">Cancel</a>
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Response</button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">The client will be notified and can accept or decline your proposed time.</p>
+                </form>
+            @else
+                <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p class="text-sm text-gray-700">
+                        This consultation has already been <strong>{{ $consultation->status }}</strong>.
+                        You can no longer change the response options here.
+                    </p>
                 </div>
-
-                <div class="flex justify-end space-x-3 pt-4">
-                    <a href="{{ route('consultant.consultations') }}" class="px-4 py-2 border rounded">Cancel</a>
-                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Response</button>
-                </div>
-            </form>
+            @endif
         </div>
     </div>
 @endsection
