@@ -151,6 +151,8 @@ class ConsultantProfileController extends Controller
             'expertise' => implode(', ', $request->expertise),
             'address' => $request->address,
             'rules_accepted' => true,
+            // Any profile update requires admin to approve again
+            'is_verified' => false,
         ];
         // Do not write nulls to non-nullable DB columns
         $updateData = array_filter($updateData, static function ($value) {

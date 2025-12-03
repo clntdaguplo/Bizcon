@@ -6,6 +6,7 @@ use App\Models\Consultation;
 use App\Models\ConsultantProfile;
 use App\Models\ConsultationNotification;
 use App\Models\ConsultationRating;
+use App\Models\ConsultationMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
@@ -92,12 +93,21 @@ class ConsultationController extends Controller
 
     public function acceptConsultation($id)
     {
-        $consultation = Consultation::where('consultant_profile_id', 
-            ConsultantProfile::where('user_id', Auth::id())->first()->id)
+        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+
+        $consultation = Consultation::where('consultant_profile_id', $profile->id)
             ->findOrFail($id);
-        
+
+        // Mark as accepted
         $consultation->status = 'Accepted';
-        $consultation->save();
+
+        // If we already have a scheduled or preferred date/time, create a Google Meet link
+        if ($consultation->scheduled_date || $consultation->preferred_date) {
+            $this->createGoogleMeetLink($consultation, $profile);
+        } else {
+            // No date information yet – just persist the accepted status
+            $consultation->save();
+        }
 
         return back()->with('success', 'Consultation request accepted successfully.');
     }
@@ -628,7 +638,7 @@ class ConsultationController extends Controller
     public function openRequest($id)
     {
         $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
-        $consultation = Consultation::with(['customer', 'consultantProfile'])
+        $consultation = Consultation::with(['customer', 'consultantProfile', 'messages.sender'])
             ->where('consultant_profile_id', $profile->id)
             ->findOrFail($id);
 
@@ -640,6 +650,67 @@ class ConsultationController extends Controller
         }
 
         return view('consultant-folder.open-request', compact('consultation'));
+    }
+
+    /**
+     * Store a chat message for a consultation (customer or consultant).
+     */
+    public function sendMessage(Request $request, $id)
+    {
+        $request->validate([
+            'message' => 'required|string|max:2000',
+        ]);
+
+        $user = Auth::user();
+        $role = $user->role;
+
+        $consultation = Consultation::with(['consultantProfile'])
+            ->findOrFail($id);
+
+        // Authorize: customer of this consultation or owning consultant
+        $isCustomer = $role === 'Customer' && $consultation->customer_id === $user->id;
+        $isConsultant = false;
+        if ($role === 'Consultant') {
+            $profile = ConsultantProfile::where('user_id', $user->id)->first();
+            $isConsultant = $profile && $consultation->consultant_profile_id === $profile->id;
+        }
+
+        if (!$isCustomer && !$isConsultant) {
+            abort(403, 'Unauthorized to send messages for this consultation.');
+        }
+
+        ConsultationMessage::create([
+            'consultation_id' => $consultation->id,
+            'sender_id' => $user->id,
+            'sender_role' => $role,
+            'message' => $request->message,
+        ]);
+
+        // Decide redirect based on role
+        if ($isConsultant) {
+            return redirect()
+                ->route('consultant.consultations.open', $consultation->id)
+                ->with('success', 'Message sent.');
+        }
+
+        return redirect()
+            ->route('customer.my-consults', ['highlight' => $consultation->id])
+            ->with('success', 'Message sent.');
+    }
+
+    /**
+     * Admin view of a single consultation (read-only details).
+     */
+    public function showAdmin($id)
+    {
+        if (Auth::user()->role !== 'Admin') {
+            abort(403, 'Only admins can view this page.');
+        }
+
+        $consultation = Consultation::with(['customer', 'consultantProfile.user'])
+            ->findOrFail($id);
+
+        return view('admin-folder.consultation-show', compact('consultation'));
     }
 
     /**
