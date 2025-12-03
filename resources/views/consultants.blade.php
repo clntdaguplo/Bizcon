@@ -71,9 +71,10 @@
             <div class="max-w-4xl mx-auto mb-12">
                 <form method="GET" action="{{ route('consultants') }}" class="mb-8">
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <input type="text" name="q" value="{{ $query ?? '' }}" 
+                        <input type="text" name="q" id="public-live-search" value="{{ $query ?? '' }}" 
                                placeholder="Search by expertise, name, or specialization..." 
-                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               autocomplete="off">
                         <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
                             Search Consultants
                         </button>
@@ -91,7 +92,7 @@
             <!-- Consultants Grid -->
             <div class="max-w-7xl mx-auto">
                 @if($consultants->count() > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div id="consultants-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         @foreach($consultants as $consultant)
                             <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition duration-300 hover:border-blue-300">
                                 <!-- Consultant Avatar and Basic Info -->
@@ -175,7 +176,7 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="mt-12">
+                    <div class="mt-12" id="pagination-wrapper">
                         {{ $consultants->appends(['q' => $query])->links() }}
                     </div>
                 @else
@@ -287,6 +288,112 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('public-live-search');
+            const grid = document.getElementById('consultants-grid');
+            const pagination = document.getElementById('pagination-wrapper');
+            const originalGridHtml = grid ? grid.innerHTML : '';
+            const originalPaginationHtml = pagination ? pagination.innerHTML : '';
+            let searchTimer = null;
+
+            if (searchInput && grid) {
+                searchInput.addEventListener('input', function () {
+                    const q = this.value.trim();
+
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(() => {
+                        if (q.length < 2) {
+                            // Restore original server-rendered list when search is cleared/very short
+                            grid.innerHTML = originalGridHtml;
+                            if (pagination) {
+                                pagination.innerHTML = originalPaginationHtml;
+                            }
+                            return;
+                        }
+
+                        fetch(`{{ route('public.consultants.api.all') }}?q=${encodeURIComponent(q)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!data.success) return;
+
+                                const consultants = data.data || [];
+                                if (!consultants.length) {
+                                    grid.innerHTML = `
+                                        <div class="col-span-full text-center py-16">
+                                            <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"></path>
+                                                </svg>
+                                            </div>
+                                            <h3 class="text-2xl font-bold text-gray-900 mb-4">No Consultants Found</h3>
+                                            <p class="text-gray-600 mb-4">We couldn't find any consultants matching "<span class="font-semibold">${q}</span>".</p>
+                                        </div>
+                                    `;
+                                    if (pagination) {
+                                        pagination.innerHTML = '';
+                                    }
+                                    return;
+                                }
+
+                                if (pagination) {
+                                    pagination.innerHTML = '';
+                                }
+
+                                grid.innerHTML = consultants.map(c => {
+                                    const expertiseList = c.expertise
+                                        ? c.expertise.split(',').map(item => item.trim()).filter(Boolean)
+                                        : [];
+                                    const expertiseHtml = expertiseList.length
+                                        ? `<ul class="mt-2 text-sm text-gray-700 space-y-1 list-disc list-inside">
+                                                ${expertiseList.map(item => `<li>${item}</li>`).join('')}
+                                           </ul>`
+                                        : `<p class="text-sm text-gray-500 mt-2">No expertise listed</p>`;
+
+                                    const avatar = c.avatar_path
+                                        ? `<img src="{{ asset('storage') }}/${c.avatar_path}" alt="${c.full_name}" class="h-full w-full object-cover">`
+                                        : `<div class="h-full w-full flex items-center justify-center text-gray-500 text-2xl font-bold">
+                                               ${c.full_name ? c.full_name.charAt(0) : '?'}
+                                           </div>`;
+
+                                    return `
+                                        <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition duration-300 hover:border-blue-300">
+                                            <div class="flex items-center mb-4">
+                                                <div class="h-16 w-16 rounded-full overflow-hidden bg-gray-200 mr-4 flex-shrink-0">
+                                                    ${avatar}
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h3 class="text-xl font-bold text-gray-900">${c.full_name}</h3>
+                                                    ${expertiseHtml}
+                                                </div>
+                                            </div>
+                                            <div class="space-y-2 mb-4">
+                                                <div class="flex items-center text-gray-600">
+                                                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                    </svg>
+                                                    <span class="text-sm">${c.email ?? ''}</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex space-x-3">
+                                                <a href="{{ route('login') }}"
+                                                   class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                                                    Request Consultation
+                                                </a>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('');
+                            })
+                            .catch(error => {
+                                console.error('Error fetching consultants:', error);
+                            });
+                    }, 300); // debounce
+                });
+            }
+        });
+    </script>
 
 </body>
 </html>

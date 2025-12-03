@@ -24,9 +24,34 @@
 
             <div class="mb-6">
                 <h4 class="font-medium text-gray-900 mb-2">Customer Preferred Schedule</h4>
-                <p class="text-gray-700">Date: {{ $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') : 'Not specified' }}</p>
-                <p class="text-gray-700">Time: {{ $consultation->preferred_time ? \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') : 'Not specified' }}</p>
+                <p class="text-gray-700">
+                    Date:
+                    {{ $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') : 'Not specified' }}
+                </p>
+                <p class="text-gray-700">
+                    Time:
+                    {{ $consultation->preferred_time ? \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') : 'Not specified' }}
+                </p>
             </div>
+
+            @if($consultation->status === 'Accepted' && $consultation->scheduled_date)
+                <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p class="font-semibold text-green-900 mb-2">✅ Scheduled Consultation</p>
+                    <p class="text-green-800 mb-2">
+                        <strong>Date &amp; Time:</strong>
+                        {{ \Carbon\Carbon::parse($consultation->scheduled_date)->format('M j, Y') }}
+                        at
+                        {{ \Carbon\Carbon::parse($consultation->scheduled_time)->format('g:i A') }}
+                    </p>
+                    @if($consultation->meeting_link)
+                        <a href="{{ $consultation->meeting_link }}"
+                           target="_blank"
+                           class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">
+                            🔗 Join Google Meet
+                        </a>
+                    @endif
+                </div>
+            @endif
 
             <form method="POST" action="{{ route('consultant.consultations.respond', $consultation->id) }}" class="space-y-4" id="responseForm">
                 @csrf

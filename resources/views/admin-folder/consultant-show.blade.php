@@ -26,10 +26,10 @@
             <h2 class="text-2xl font-bold text-gray-900">{{ $profile->full_name ?? $profile->user->name }}</h2>
             <p class="text-gray-600">{{ $profile->email ?? $profile->user->email }}</p>
             <div class="mt-2 flex items-center space-x-3">
-                @if($profile->is_verified)
+                @if($profile->is_rejected)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Suspended</span>
+                @elseif($profile->is_verified)
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>
-                @elseif($profile->is_rejected)
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
                 @else
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
                 @endif
@@ -48,9 +48,58 @@
                 @endif
             </div>
         </div>
-        <div class="text-right text-sm text-gray-500">
-            <div>Joined</div>
-            <div>{{ ($profile->created_at ?? $profile->user->created_at)->format('M d, Y') }}</div>
+        <div class="text-right text-sm text-gray-500 space-y-2">
+            <div>
+                <div>Joined</div>
+                <div>{{ ($profile->created_at ?? $profile->user->created_at)->format('M d, Y') }}</div>
+            </div>
+            <div>
+                @if(!$profile->is_verified && !$profile->is_rejected)
+                    {{-- Pending: show Approve / Reject --}}
+                    <form method="POST"
+                          action="{{ route('admin.consultants.approve', $profile->id) }}"
+                          class="mb-2"
+                          onsubmit="return confirm('Approve this consultant?');">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-700 w-full justify-center">
+                            Approve Consultant
+                        </button>
+                    </form>
+                    <form method="POST"
+                          action="{{ route('admin.consultants.reject', $profile->id) }}"
+                          onsubmit="return confirm('Reject this consultant?');">
+                        @csrf
+                        <input type="hidden" name="admin_note" value="Rejected from consultant profile view.">
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700 w-full justify-center">
+                            Reject Consultant
+                        </button>
+                    </form>
+                @elseif($profile->is_rejected)
+                    {{-- Suspended: show Unsuspend --}}
+                    <form method="POST"
+                          action="{{ route('admin.consultants.unsuspend', $profile->id) }}"
+                          onsubmit="return confirm('Unsuspend this consultant?');">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-700">
+                            Unsuspend this Consultant
+                        </button>
+                    </form>
+                @else
+                    {{-- Verified & not suspended: show Suspend --}}
+                    <form method="POST"
+                          action="{{ route('admin.consultants.suspend', $profile->id) }}"
+                          onsubmit="return confirm('Suspend this consultant?');">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-700">
+                            Suspend this Consultant
+                        </button>
+                    </form>
+                @endif
+            </div>
         </div>
     </div>
 

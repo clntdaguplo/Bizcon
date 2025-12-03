@@ -9,7 +9,10 @@ use App\Http\Controllers\ConsultantProfileController;
 use App\Http\Controllers\AdminConsultantController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\CustomerConsultantController;
+use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CustomerProfileController;
+use App\Http\Controllers\RoleController;
 
 // Public pages
 Route::get('/', fn() => view('home'))->name('home');
@@ -52,6 +55,10 @@ Route::get('/consultants', function() {
     return view('consultants', compact('consultants', 'query'));
 })->name('consultants');
 
+// Public API for consultants (used for live search on landing & public consultants page)
+Route::get('/consultants/api/all', [CustomerConsultantController::class, 'getAllConsultants'])
+    ->name('public.consultants.api.all');
+
 // Signup routes
 Route::get('/signup', [SignupController::class, 'show'])->name('signup');
 Route::post('/signup', [SignupController::class, 'store']);
@@ -68,12 +75,13 @@ Route::get('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-// Protected dashboard route
+// Protected dashboard route + generic auth-only routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
 
-use App\Http\Controllers\RoleController;
+    // Generic notification redirector for all roles
+    Route::get('/notifications/{id}/go', [NotificationController::class, 'go'])->name('notifications.go');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/select-role', [RoleController::class, 'show'])->name('role.select');
@@ -205,6 +213,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/admin/consultants/pending', [AdminConsultantController::class, 'index'])->name('admin.consultants.pending');
     Route::post('/admin/consultants/{id}/approve', [AdminConsultantController::class, 'approve'])->name('admin.consultants.approve');
     Route::post('/admin/consultants/{id}/reject', [AdminConsultantController::class, 'reject'])->name('admin.consultants.reject');
+    Route::post('/admin/consultants/{id}/suspend', [AdminConsultantController::class, 'suspend'])->name('admin.consultants.suspend');
+    Route::post('/admin/consultants/{id}/unsuspend', [AdminConsultantController::class, 'unsuspend'])->name('admin.consultants.unsuspend');
     Route::get('/admin/consultants', [AdminConsultantController::class, 'consultants'])->name('admin.consultants');
     Route::get('/admin/consultants/{id}', [AdminConsultantController::class, 'show'])->name('admin.consultants.show');
     Route::get('/admin/customers', [AdminConsultantController::class, 'customers'])->name('admin.customers');
@@ -228,6 +238,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
             ->get();
         return view('admin-folder.consultations', compact('consultations'));
     })->name('admin.consultations');
+
+    Route::get('/admin/consultations/{id}', [ConsultationController::class, 'showAdmin'])
+        ->name('admin.consultations.show');
     
     Route::get('/admin/reports', function() {
         $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])->get();
@@ -236,6 +249,11 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         
         return view('admin-folder.reports', compact('consultations', 'consultants', 'customers'));
     })->name('admin.reports');
+
+    // Admin report exports
+    Route::get('/admin/reports/export/pdf', [AdminReportController::class, 'exportPdf'])->name('admin.reports.export.pdf');
+    Route::get('/admin/reports/export/excel', [AdminReportController::class, 'exportExcel'])->name('admin.reports.export.excel');
+    Route::get('/admin/reports/export/csv', [AdminReportController::class, 'exportCsv'])->name('admin.reports.export.csv');
     
     Route::get('/admin/settings', function() {
         return view('admin-folder.settings');

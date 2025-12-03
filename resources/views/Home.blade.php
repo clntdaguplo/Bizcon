@@ -166,6 +166,46 @@
         </div>
             </section>
 
+    <!-- Find a Consultant (Live Search) -->
+    <section id="consultants" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="max-w-3xl mx-auto text-center mb-12">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Find a Consultant</h2>
+                <p class="text-lg text-gray-600">
+                    Search our verified consultants by expertise, name, or email and find the right expert for your needs.
+                </p>
+            </div>
+
+            <div class="max-w-4xl mx-auto mb-10">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input
+                        type="text"
+                        id="home-live-search"
+                        placeholder="Start typing to search consultants..."
+                        class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autocomplete="off"
+                    >
+                    <a href="{{ route('consultants') }}"
+                       class="inline-flex items-center justify-center bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                        View Full Directory
+                    </a>
+                </div>
+                <p id="home-search-hint" class="mt-3 text-sm text-gray-500">
+                    Type at least 2 characters to see matching consultants.
+                </p>
+            </div>
+
+            <div id="home-consultants-grid-wrapper" class="max-w-6xl mx-auto">
+                <div id="home-consultants-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Live search results will appear here -->
+                </div>
+                <div id="home-consultants-empty" class="text-center text-gray-400 text-sm mt-10">
+                    Start typing above to search our consultants.
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- About Us Section -->
     <section id="about" class="py-20 bg-gray-50">
         <div class="container mx-auto px-6">
@@ -295,6 +335,118 @@
             </div>
         </div>
             </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('home-live-search');
+            const grid = document.getElementById('home-consultants-grid');
+            const emptyState = document.getElementById('home-consultants-empty');
+            const hint = document.getElementById('home-search-hint');
+            let searchTimer = null;
+
+            if (!searchInput || !grid) {
+                return;
+            }
+
+            function setEmptyState(message) {
+                if (emptyState) {
+                    emptyState.innerHTML = message;
+                    emptyState.classList.remove('hidden');
+                }
+            }
+
+            function hideEmptyState() {
+                if (emptyState) {
+                    emptyState.classList.add('hidden');
+                }
+            }
+
+            searchInput.addEventListener('input', function () {
+                const q = this.value.trim();
+
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    if (q.length < 2) {
+                        grid.innerHTML = '';
+                        setEmptyState('Type at least 2 characters to see matching consultants.');
+                        return;
+                    }
+
+                    if (hint) {
+                        hint.textContent = `Searching for "${q}"...`;
+                    }
+
+                    fetch(`{{ route('public.consultants.api.all') }}?q=${encodeURIComponent(q)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.success) return;
+
+                            const consultants = data.data || [];
+                            if (!consultants.length) {
+                                grid.innerHTML = '';
+                                setEmptyState(`No consultants match "<span class="font-semibold">${q}</span>".`);
+                                return;
+                            }
+
+                            hideEmptyState();
+
+                            grid.innerHTML = consultants.map(c => {
+                                const expertiseList = c.expertise
+                                    ? c.expertise.split(',').map(item => item.trim()).filter(Boolean)
+                                    : [];
+                                const expertiseHtml = expertiseList.length
+                                    ? `<ul class="mt-2 text-sm text-gray-700 space-y-1 list-disc list-inside">
+                                            ${expertiseList.map(item => `<li>${item}</li>`).join('')}
+                                       </ul>`
+                                    : `<p class="text-sm text-gray-500 mt-2">No expertise listed</p>`;
+
+                                const avatar = c.avatar_path
+                                    ? `<img src="{{ asset('storage') }}/${c.avatar_path}" alt="${c.full_name}" class="h-full w-full object-cover">`
+                                    : `<div class="h-full w-full flex items-center justify-center text-gray-500 text-2xl font-bold">
+                                           ${c.full_name ? c.full_name.charAt(0) : '?'}
+                                       </div>`;
+
+                                return `
+                                    <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl transition duration-300 hover:border-blue-300">
+                                        <div class="flex items-center mb-4">
+                                            <div class="h-16 w-16 rounded-full overflow-hidden bg-gray-200 mr-4 flex-shrink-0">
+                                                ${avatar}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h3 class="text-xl font-bold text-gray-900">${c.full_name}</h3>
+                                                ${expertiseHtml}
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 mb-4">
+                                            <div class="flex items-center text-gray-600">
+                                                <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                </svg>
+                                                <span class="text-sm">${c.email ?? ''}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex space-x-3">
+                                            <a href="{{ route('login') }}"
+                                               class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                                                Request Consultation
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            if (hint) {
+                                hint.textContent = `Showing results for "${q}".`;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching consultants:', error);
+                            setEmptyState('Something went wrong while searching. Please try again.');
+                        });
+                }, 300); // debounce
+            });
+        });
+    </script>
 
 </body>
 </html>

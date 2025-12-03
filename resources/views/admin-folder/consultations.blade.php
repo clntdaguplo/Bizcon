@@ -171,7 +171,10 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button class="text-blue-600 hover:text-blue-900">View Details</button>
+                                <a href="{{ route('admin.consultations.show', $consultation->id) }}"
+                                   class="text-blue-600 hover:text-blue-900">
+                                    View Details
+                                </a>
                             </td>
                         </tr>
                     @empty

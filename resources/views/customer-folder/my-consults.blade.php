@@ -27,7 +27,7 @@
                     </thead>
                     <tbody>
                         @forelse($consultations ?? [] as $consultation)
-                            <tr class="border-t hover:bg-gray-50 transition-colors">
+                            <tr id="consultation-{{ $consultation->id }}" class="border-t hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-2">{{ $consultation->topic }}</td>
                                 <td class="px-4 py-2">{{ optional(optional($consultation->consultantProfile)->user)->name ?? '—' }}</td>
                                 <td class="px-4 py-2">{{ $consultation->created_at->format('M j, Y') }}</td>
@@ -194,6 +194,22 @@
                 this.textContent = isHidden ? 'View' : 'Hide';
             });
         });
+
+        // If coming from a notification with a highlight param, scroll and highlight the row
+        const params = new URLSearchParams(window.location.search);
+        const highlightId = params.get('highlight');
+        if (highlightId) {
+            const row = document.getElementById('consultation-' + highlightId);
+            if (row) {
+                row.classList.add('ring-2', 'ring-blue-400', 'ring-offset-1');
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Remove highlight after a few seconds
+                setTimeout(() => {
+                    row.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-1');
+                }, 4000);
+            }
+        }
     });
 </script>
 @endsection
