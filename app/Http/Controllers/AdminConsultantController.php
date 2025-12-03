@@ -60,6 +60,30 @@ class AdminConsultantController extends Controller
         return back()->with('success', 'Consultant rejected.');
     }
 
+    /**
+     * Soft-suspend a consultant (reuses is_rejected flag).
+     */
+    public function suspend($id)
+    {
+        $profile = ConsultantProfile::findOrFail($id);
+        $profile->is_rejected = true;
+        $profile->save();
+
+        return back()->with('success', 'Consultant has been suspended.');
+    }
+
+    /**
+     * Remove suspension for a consultant.
+     */
+    public function unsuspend($id)
+    {
+        $profile = ConsultantProfile::findOrFail($id);
+        $profile->is_rejected = false;
+        $profile->save();
+
+        return back()->with('success', 'Consultant suspension removed.');
+    }
+
     public function show($id)
     {
         $profile = ConsultantProfile::with('user')->findOrFail($id);
