@@ -75,8 +75,9 @@
 
         <!-- Consultations List -->
         <div class="bg-white rounded-xl shadow">
-            @forelse($consultations as $consultation)
-                <div class="consultation-item border-b border-gray-200 p-6 hover:bg-gray-50 transition-colors" 
+        @forelse($consultations as $consultation)
+                <div id="consultation-{{ $consultation->id }}"
+                     class="consultation-item border-b border-gray-200 p-6 hover:bg-gray-50 transition-colors" 
                      data-status="{{ strtolower($consultation->status) }}">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between">
                         <div class="flex-1">
@@ -224,7 +225,24 @@
             }
         });
     }
-    
+
+    // When arriving via notification with ?highlight=ID, scroll and highlight that consultation
+    document.addEventListener('DOMContentLoaded', function () {
+        const params = new URLSearchParams(window.location.search);
+        const highlightId = params.get('highlight');
+        if (highlightId) {
+            const el = document.getElementById('consultation-' + highlightId);
+            if (el) {
+                el.classList.add('ring-2', 'ring-blue-400', 'ring-offset-1');
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                setTimeout(() => {
+                    el.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-1');
+                }, 4000);
+            }
+        }
+    });
+
     // viewConsultationDetails removed — Open Request now navigates to the request response page
 </script>
 @endsection

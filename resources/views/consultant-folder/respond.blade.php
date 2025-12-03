@@ -23,6 +23,8 @@
             </div>
         </div>
 
+
+
         <!-- Pending Requests -->
         @if($pending_consultations->count() > 0)
             <div class="space-y-6">

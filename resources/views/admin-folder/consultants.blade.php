@@ -117,7 +117,7 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 @if($consultant->is_rejected) ring-2 ring-red-500 @endif">
                                         @if($consultant->avatar_path)
                                             <img src="{{ asset('storage/'.$consultant->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
                                         @else
@@ -155,11 +155,30 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex space-x-2">
-                                    <a href="{{ route('admin.consultants.show', $consultant->id) }}" class="text-blue-600 hover:text-blue-900">View</a>
-                                    @if(!$consultant->is_verified)
-                                        <button class="text-green-600 hover:text-green-900">Approve</button>
+                                    <a href="{{ route('admin.consultants.show', $consultant->id) }}" class="text-blue-600 hover:text-blue-900">
+                                        View
+                                    </a>
+
+                                    @if(!$consultant->is_verified && empty($consultant->is_rejected))
+                                        <form method="POST"
+                                              action="{{ route('admin.consultants.approve', $consultant->id) }}"
+                                              onsubmit="return confirm('Approve this consultant?');">
+                                            @csrf
+                                            <button type="submit" class="text-green-600 hover:text-green-900">
+                                                Approve
+                                            </button>
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ route('admin.consultants.reject', $consultant->id) }}"
+                                              onsubmit="return confirm('Reject this consultant?');">
+                                            @csrf
+                                            <input type="hidden" name="admin_note" value="Rejected from All Consultants page.">
+                                            <button type="submit" class="text-red-600 hover:text-red-900">
+                                                Reject
+                                            </button>
+                                        </form>
                                     @endif
-                                    <button class="text-red-600 hover:text-red-900">Suspend</button>
                                 </div>
                             </td>
                         </tr>

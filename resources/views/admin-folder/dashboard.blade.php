@@ -81,7 +81,7 @@
             <div class="p-6">
                 @forelse($consultants->take(5) as $consultant)
                     <div class="flex items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center @if($consultant->is_rejected) ring-2 ring-red-500 @endif">
                             <span class="text-sm font-medium text-blue-600">{{ substr($consultant->user->name, 0, 1) }}</span>
                         </div>
                         <div class="ml-4 flex-1">
