@@ -92,6 +92,25 @@
                                 <span class="text-xs text-gray-500">No ratings yet</span>
                             @endif
                         </div>
+                        <div class="flex items-center">
+                            @if ($profile->google_token)
+                                <span class="inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700 border border-green-200">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Google Calendar Connected
+                                </span>
+                            @else
+                                <a href="{{ route('google.connect') }}"
+                                   class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-blue-700 border border-blue-300 hover:bg-blue-50 transition">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                                        <path
+                                            d="M21.35 11.1H12v2.8h5.35c-.25 1.4-1.5 4.1-5.35 4.1-3.22 0-5.85-2.66-5.85-5.9s2.63-5.9 5.85-5.9c1.83 0 3.06.78 3.76 1.45l2.57-2.5C16.66 3.7 14.63 2.8 12 2.8 6.96 2.8 2.9 6.86 2.9 11.9S6.96 21 12 21c6.25 0 8.35-4.38 8.35-7.1 0-.48-.05-.84-.1-1.2z" />
+                                    </svg>
+                                    Connect Google Calendar
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 <div class="text-right">
