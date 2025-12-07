@@ -76,32 +76,35 @@
 
     <!-- Filter and Date Range -->
     <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex flex-col sm:flex-row gap-4">
-            <div class="flex-1">
-                <label for="date-range" class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                <select id="date-range" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="7">Last 7 days</option>
-                    <option value="30" selected>Last 30 days</option>
-                    <option value="90">Last 90 days</option>
-                    <option value="365">Last year</option>
-                </select>
+        <form method="GET" action="{{ route('admin.reports') }}" id="reportFilterForm">
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="date-range" class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                    <select name="days" id="date-range" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="7" {{ request('days') == '7' ? 'selected' : '' }}>Last 7 days</option>
+                        <option value="30" {{ !request('days') || request('days') == '30' ? 'selected' : '' }}>Last 30 days</option>
+                        <option value="90" {{ request('days') == '90' ? 'selected' : '' }}>Last 90 days</option>
+                        <option value="365" {{ request('days') == '365' ? 'selected' : '' }}>Last year</option>
+                        <option value="all" {{ request('days') == 'all' ? 'selected' : '' }}>All Time</option>
+                    </select>
+                </div>
+                <div class="sm:w-48">
+                    <label for="report-type" class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <select name="type" id="report-type" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="overview" {{ !request('type') || request('type') == 'overview' ? 'selected' : '' }}>Overview</option>
+                        <option value="consultants" {{ request('type') == 'consultants' ? 'selected' : '' }}>Consultant Performance</option>
+                        <option value="customers" {{ request('type') == 'customers' ? 'selected' : '' }}>Customer Analytics</option>
+                        <option value="sessions" {{ request('type') == 'sessions' ? 'selected' : '' }}>Session Analytics</option>
+                    </select>
+                </div>
+                <div class="sm:w-32">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+                    <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
+                        Generate
+                    </button>
+                </div>
             </div>
-            <div class="sm:w-48">
-                <label for="report-type" class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-                <select id="report-type" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="overview">Overview</option>
-                    <option value="consultants">Consultant Performance</option>
-                    <option value="customers">Customer Analytics</option>
-                    <option value="sessions">Session Analytics</option>
-                </select>
-            </div>
-            <div class="sm:w-32">
-                <label class="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
-                <button class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                    Generate
-                </button>
-            </div>
-        </div>
+        </form>
     </div>
 
     <!-- Charts Section -->
@@ -123,7 +126,7 @@
         <div class="bg-white rounded-lg shadow">
             <div class="p-6 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900">Session Distribution</h3>
-                <p class="text-sm text-gray-600">By consultant expertise</p>
+                <p class="text-sm text-gray-600">By Topic / Expertise (What customers chose) - Accepted Sessions Only</p>
             </div>
             <div class="p-6">
                 <div class="h-64">
@@ -161,7 +164,15 @@
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-900">{{ $item['consultant']->user->name ?? 'N/A' }}</p>
-                                        <p class="text-xs text-gray-500">{{ $item['consultant']->expertise ?? 'N/A' }}</p>
+                                        @php
+                                            $expertise = $item['consultant']->expertise ?? 'N/A';
+                                            // Show only the first expertise
+                                            if ($expertise !== 'N/A' && strpos($expertise, ',') !== false) {
+                                                $expertiseArray = array_map('trim', explode(',', $expertise));
+                                                $expertise = !empty($expertiseArray[0]) ? $expertiseArray[0] : 'N/A';
+                                            }
+                                        @endphp
+                                        <p class="text-xs text-gray-500">{{ $expertise }}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
@@ -293,22 +304,48 @@ if (revenueCtx) {
     });
 }
 
-// Session Distribution Chart (by consultant expertise)
+// Session Distribution Chart - Shows ALL topics from Consultation Sessions Topic Column
+// Only shows consultations with status "Accepted" (excludes Pending and other statuses)
 @php
-    $expertiseGroups = $consultations->groupBy(function($consultation) {
-        return $consultation->consultantProfile?->expertise ?? 'Unknown';
-    })->take(4);
-    $expertiseLabels = $expertiseGroups->keys()->toArray();
-    $expertiseCounts = $expertiseGroups->map->count()->values()->toArray();
+    // Get all unique topics from the consultations table - ONLY ACCEPTED status
+    // Group by the 'topic' field from consultations table - this is what appears in the Topic column
+    $topicGroups = $consultations
+        ->where('status', 'Accepted') // Only show Accepted consultations
+        ->whereNotNull('topic')
+        ->where('topic', '!=', '')
+        ->filter(function($consultation) {
+            return !empty(trim($consultation->topic));
+        })
+        ->groupBy(function($consultation) {
+            // Use the topic field exactly as it appears in the Topic column
+            // This matches what shows in admin/consultations table: {{ $consultation->topic }}
+            return trim($consultation->topic);
+        })
+        ->map(function($group) {
+            return $group->count();
+        })
+        ->sortByDesc(function($count) {
+            return $count;
+        });
+    
+    // Get all topics - show all unique topics from the Topic column in admin/consultations table
+    $topicLabels = $topicGroups->keys()->toArray();
+    $topicCounts = $topicGroups->values()->toArray();
+    
+    // If no topics, show "No data"
+    if (empty($topicLabels)) {
+        $topicLabels = ['No data'];
+        $topicCounts = [0];
+    }
 @endphp
 const sessionCtx = document.getElementById('sessionChart');
 if (sessionCtx) {
     new Chart(sessionCtx.getContext('2d'), {
         type: 'doughnut',
         data: {
-            labels: {!! json_encode($expertiseLabels ?: ['No data']) !!},
+            labels: {!! json_encode($topicLabels ?: ['No data']) !!},
             datasets: [{
-                data: {!! json_encode($expertiseCounts ?: [0]) !!},
+                data: {!! json_encode($topicCounts ?: [0]) !!},
                 backgroundColor: [
                     'rgb(59, 130, 246)',
                     'rgb(16, 185, 129)',

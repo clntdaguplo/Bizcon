@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\SignupController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
@@ -24,6 +25,7 @@ Route::get('/consultants', function() {
     $query = request('q');
     $consultants = \App\Models\ConsultantProfile::with('user')
         ->where('is_verified', true)
+        ->where('is_rejected', false) // Exclude suspended consultants
         ->when($query, function($q) use ($query) {
             $normalized = mb_strtolower($query);
             $q->where(function($sub) use ($normalized, $query) {
@@ -98,8 +100,26 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
         $selectedConsultant = null;
         if (request()->filled('consultant')) {
             $selectedConsultant = \App\Models\ConsultantProfile::where('is_verified', true)
+                ->where('is_rejected', false)
                 ->with('user')
                 ->find(request('consultant'));
+            
+            // Calculate ratings if consultant is selected
+            if ($selectedConsultant) {
+                $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($selectedConsultant) {
+                    $q->where('consultant_profile_id', $selectedConsultant->id);
+                })
+                ->where('rater_type', 'customer')
+                ->get();
+                
+                if ($ratings->count() > 0) {
+                    $selectedConsultant->average_rating = round($ratings->avg('rating'), 1);
+                    $selectedConsultant->total_ratings = $ratings->count();
+                } else {
+                    $selectedConsultant->average_rating = null;
+                    $selectedConsultant->total_ratings = 0;
+                }
+            }
         }
         return view('customer-folder.new-consult', compact('selectedConsultant'));
     })->name('customer.new-consult');
@@ -111,6 +131,9 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
 
     Route::get('/customer/my-consults', [\App\Http\Controllers\ConsultationController::class, 'customerHistory'])->name('customer.my-consults');
     Route::get('/customer/my_consults', [\App\Http\Controllers\ConsultationController::class, 'customerHistory'])->name('customer.my_consults');
+    
+    // View consultation details
+    Route::get('/customer/consultations/{id}', [ConsultationController::class, 'show'])->name('customer.consultations.show');
     
     // Client response to consultant's proposed schedule
     Route::post('/customer/consultations/{id}/respond-proposal', [ConsultationController::class, 'respondToProposal'])->name('customer.consultations.respond-proposal');
@@ -126,6 +149,10 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
     // Rating routes
     Route::get('/customer/consultations/{id}/rate', [ConsultationController::class, 'showRatingForm'])->name('customer.consultations.rate');
     Route::post('/customer/consultations/{id}/rate', [ConsultationController::class, 'saveRating'])->name('consultation.rating.save');
+
+    // Messaging routes for customers
+    Route::post('/customer/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('customer.consultations.messages.store');
+    Route::get('/customer/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'index'])->name('customer.consultations.messages.index');
 
     Route::get('/customer/profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::put('/customer/profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
@@ -190,12 +217,14 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     })->name('consultant.profile.manage');
     
     Route::put('/consultant/profile/update', [ConsultantProfileController::class, 'updateProfile'])->name('consultant.profile.update');
+    Route::post('/consultant/profile/cancel-update', [ConsultantProfileController::class, 'cancelUpdate'])->name('consultant.profile.cancel-update');
     
     // Consultation response actions
     Route::post('/consultant/consultations/{id}/accept', [ConsultationController::class, 'acceptConsultation'])->name('consultant.consultations.accept');
     Route::post('/consultant/consultations/{id}/reject', [ConsultationController::class, 'rejectConsultation'])->name('consultant.consultations.reject');
     Route::post('/consultant/consultations/{id}/complete', [ConsultationController::class, 'completeConsultation'])->name('consultant.consultations.complete');
     Route::post('/consultant/consultations/{id}/respond', [ConsultationController::class, 'respondToConsultation'])->name('consultant.consultations.respond');
+    Route::post('/consultant/consultations/{id}/generate-meet-link', [ConsultationController::class, 'generateMeetLink'])->name('consultant.consultations.generate-meet-link');
     
     // Report routes
     // Consultant views to create/edit report (form)
@@ -207,17 +236,28 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     // Rating routes
     Route::get('/consultant/consultations/{id}/rate', [ConsultationController::class, 'showRatingForm'])->name('consultant.consultations.rate');
     Route::post('/consultant/consultations/{id}/rate', [ConsultationController::class, 'saveRating'])->name('consultation.rating.save');
+
+    // Messaging routes for consultants
+    Route::post('/consultant/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('consultant.consultations.messages.store');
+    Route::get('/consultant/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'index'])->name('consultant.consultations.messages.index');
 });
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin');
     Route::get('/admin/consultants/pending', [AdminConsultantController::class, 'index'])->name('admin.consultants.pending');
+    Route::get('/admin/consultants/rejected', [AdminConsultantController::class, 'rejected'])->name('admin.consultants.rejected');
+    Route::get('/admin/consultants/suspended', [AdminConsultantController::class, 'suspended'])->name('admin.consultants.suspended');
     Route::post('/admin/consultants/{id}/approve', [AdminConsultantController::class, 'approve'])->name('admin.consultants.approve');
     Route::post('/admin/consultants/{id}/reject', [AdminConsultantController::class, 'reject'])->name('admin.consultants.reject');
     Route::post('/admin/consultants/{id}/suspend', [AdminConsultantController::class, 'suspend'])->name('admin.consultants.suspend');
     Route::post('/admin/consultants/{id}/unsuspend', [AdminConsultantController::class, 'unsuspend'])->name('admin.consultants.unsuspend');
+    Route::post('/admin/consultants/{id}/approve-update', [AdminConsultantController::class, 'approveUpdate'])->name('admin.consultants.approve-update');
+    Route::post('/admin/consultants/{id}/reject-update', [AdminConsultantController::class, 'rejectUpdate'])->name('admin.consultants.reject-update');
     Route::get('/admin/consultants', [AdminConsultantController::class, 'consultants'])->name('admin.consultants');
     Route::get('/admin/consultants/{id}', [AdminConsultantController::class, 'show'])->name('admin.consultants.show');
     Route::get('/admin/customers', [AdminConsultantController::class, 'customers'])->name('admin.customers');
+    Route::get('/admin/customers/suspended', [AdminConsultantController::class, 'customersSuspended'])->name('admin.customers.suspended');
+    Route::post('/admin/customers/{id}/suspend', [AdminConsultantController::class, 'suspendCustomer'])->name('admin.customers.suspend');
+    Route::post('/admin/customers/{id}/unsuspend', [AdminConsultantController::class, 'unsuspendCustomer'])->name('admin.customers.unsuspend');
     Route::get('/admin/customers/{id}', function ($id) {
         $customer = \App\Models\User::where('role', 'Customer')->findOrFail($id);
         return view('admin-folder.customer-profile', compact('customer'));
@@ -228,26 +268,124 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         $consultants = \App\Models\ConsultantProfile::with('user')->where('is_verified', true)->get();
         $customers = \App\Models\User::where('role', 'Customer')->get();
         $pending = \App\Models\ConsultantProfile::where('is_verified', false)->where('is_rejected', false)->get();
+        $pendingUpdates = \App\Models\ConsultantProfile::where('has_pending_update', true)->count();
         
-        return view('admin-folder.manage-users', compact('consultants', 'customers', 'pending'));
+        return view('admin-folder.manage-users', compact('consultants', 'customers', 'pending', 'pendingUpdates'));
     })->name('admin.manage-users');
     
-    Route::get('/admin/consultations', function() {
+    Route::get('/admin/consultations', function(Request $request) {
+        $query = $request->get('search', '');
+        $status = $request->get('status', '');
+        $dateFilter = $request->get('date_filter', '');
+        
+        // Get statistics from the database (total counts)
+        $baseQuery = \App\Models\Consultation::query();
+        
+        // Apply same filters for statistics
+        $statsQuery = clone $baseQuery;
+        if ($query) {
+            $statsQuery->where(function($sub) use ($query) {
+                $sub->where('topic', 'like', "%{$query}%")
+                    ->orWhereHas('consultantProfile.user', function($userQuery) use ($query) {
+                        $userQuery->where('name', 'like', "%{$query}%")
+                                  ->orWhere('email', 'like', "%{$query}%");
+                    })
+                    ->orWhereHas('customer', function($customerQuery) use ($query) {
+                        $customerQuery->where('name', 'like', "%{$query}%")
+                                     ->orWhere('email', 'like', "%{$query}%");
+                    });
+            });
+        }
+        if ($dateFilter === 'today') {
+            $statsQuery->whereDate('created_at', today());
+        } elseif ($dateFilter === 'week') {
+            $statsQuery->where('created_at', '>=', now()->startOfWeek());
+        } elseif ($dateFilter === 'month') {
+            $statsQuery->where('created_at', '>=', now()->startOfMonth());
+        }
+        
+        // Get statistics
+        $totalCount = (clone $statsQuery)->count();
+        $completedCount = (clone $statsQuery)->where('status', 'Completed')->count();
+        $inProgressCount = (clone $statsQuery)->where('status', 'Accepted')->count();
+        $cancelledCount = (clone $statsQuery)->where('status', 'Cancelled')->count();
+        
+        // Fetch consultations with filters
         $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])
+            ->when($query, function($q) use ($query) {
+                $q->where(function($sub) use ($query) {
+                    $sub->where('topic', 'like', "%{$query}%")
+                        ->orWhereHas('consultantProfile.user', function($userQuery) use ($query) {
+                            $userQuery->where('name', 'like', "%{$query}%")
+                                      ->orWhere('email', 'like', "%{$query}%");
+                        })
+                        ->orWhereHas('customer', function($customerQuery) use ($query) {
+                            $customerQuery->where('name', 'like', "%{$query}%")
+                                         ->orWhere('email', 'like', "%{$query}%");
+                        });
+                });
+            })
+            ->when($status === 'completed', function($q) {
+                $q->where('status', 'Completed');
+            })
+            ->when($status === 'in-progress', function($q) {
+                $q->where('status', 'Accepted');
+            })
+            ->when($status === 'cancelled', function($q) {
+                $q->where('status', 'Cancelled');
+            })
+            ->when($status === 'pending', function($q) {
+                $q->where('status', 'Pending');
+            })
+            ->when($dateFilter === 'today', function($q) {
+                $q->whereDate('created_at', today());
+            })
+            ->when($dateFilter === 'week', function($q) {
+                $q->where('created_at', '>=', now()->startOfWeek());
+            })
+            ->when($dateFilter === 'month', function($q) {
+                $q->where('created_at', '>=', now()->startOfMonth());
+            })
             ->orderByDesc('created_at')
+            ->paginate(15)
+            ->appends($request->query());
+        
+        // Get recent activity - focus on completed sessions and status changes
+        $recentActivity = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])
+            ->where(function($q) {
+                $q->where('status', 'Completed')
+                  ->orWhere(function($sub) {
+                      // Get consultations that changed status recently (check updated_at vs created_at)
+                      $sub->whereColumn('updated_at', '>', 'created_at')
+                          ->whereIn('status', ['Completed', 'Accepted', 'Cancelled', 'Rejected']);
+                  });
+            })
+            ->orderByDesc('updated_at')
+            ->limit(10)
             ->get();
-        return view('admin-folder.consultations', compact('consultations'));
+        
+        return view('admin-folder.consultations', compact('consultations', 'totalCount', 'completedCount', 'inProgressCount', 'cancelledCount', 'recentActivity'));
     })->name('admin.consultations');
 
     Route::get('/admin/consultations/{id}', [ConsultationController::class, 'showAdmin'])
         ->name('admin.consultations.show');
     
     Route::get('/admin/reports', function() {
-        $consultations = \App\Models\Consultation::with(['consultantProfile.user', 'customer'])->get();
+        $days = request('days', '30');
+        $reportType = request('type', 'overview');
+        
+        // Filter consultations by date range
+        $consultationsQuery = \App\Models\Consultation::with(['consultantProfile.user', 'customer']);
+        
+        if ($days !== 'all') {
+            $consultationsQuery->where('created_at', '>=', now()->subDays((int)$days));
+        }
+        
+        $consultations = $consultationsQuery->get();
         $consultants = \App\Models\ConsultantProfile::where('is_verified', true)->with('user')->get();
         $customers = \App\Models\User::where('role', 'Customer')->get();
         
-        return view('admin-folder.reports', compact('consultations', 'consultants', 'customers'));
+        return view('admin-folder.reports', compact('consultations', 'consultants', 'customers', 'days', 'reportType'));
     })->name('admin.reports');
 
     // Admin report exports

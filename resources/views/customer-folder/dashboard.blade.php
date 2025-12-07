@@ -19,11 +19,11 @@
             <!-- Quick Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center shadow-sm">
-                    <div class="text-2xl font-bold text-blue-600">0</div>
+                    <div class="text-2xl font-bold text-blue-600">{{ $activeBookings ?? 0 }}</div>
                     <div class="text-sm text-blue-800">Active Bookings</div>
                 </div>
                 <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center shadow-sm">
-                    <div class="text-2xl font-bold text-green-600">0</div>
+                    <div class="text-2xl font-bold text-green-600">{{ $completedSessions ?? 0 }}</div>
                     <div class="text-sm text-green-800">Completed Sessions</div>
                 </div>
                 <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center shadow-sm">
@@ -62,7 +62,7 @@
                         <h2 class="text-xl font-semibold">Your Bookings</h2>
                     </div>
                     <p class="text-gray-600 mb-4">Check upcoming and past appointments with consultants.</p>
-                    <a href="#" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition">
+                    <a href="{{ route('customer.my-consults') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 transition">
                         View Bookings
                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -70,6 +70,66 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Completed Sessions Section -->
+            @if(isset($completedConsultations) && $completedConsultations->count() > 0)
+            <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-lg mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold">Completed Sessions</h3>
+                    </div>
+                    <a href="{{ route('customer.my-consults') }}?status=completed" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        View All →
+                    </a>
+                </div>
+                <div class="space-y-3">
+                    @foreach($completedConsultations as $consultation)
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <div class="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mr-3">
+                                            @if($consultation->consultantProfile->avatar_path ?? null)
+                                                <img src="{{ asset('storage/'.$consultation->consultantProfile->avatar_path) }}" alt="Avatar" class="w-full h-full object-cover">
+                                            @else
+                                                <span class="text-xs font-semibold text-blue-700">{{ substr($consultation->consultantProfile->user->name ?? 'N/A', 0, 1) }}</span>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-gray-900">{{ $consultation->consultantProfile->user->name ?? 'Unknown Consultant' }}</div>
+                                            <div class="text-sm text-gray-600">{{ $consultation->topic }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center text-xs text-gray-500 mt-2">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span>Completed on {{ $consultation->updated_at->format('M j, Y') }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center ml-4">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-800 border border-green-200">
+                                        <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Completed
+                                    </span>
+                                    <a href="{{ route('customer.consultations.show', $consultation->id) }}" 
+                                       class="ml-3 inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 hover:border-blue-300 text-sm">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
 
             <!-- Available Consultants Preview -->
             <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-lg">

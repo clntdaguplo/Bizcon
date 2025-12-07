@@ -140,7 +140,24 @@
 
             <main class="flex-1 overflow-y-auto p-6">
                 @if(session('success'))
-                    <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">{{ session('success') }}</div>
+                    <div class="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-xl shadow-md" id="success-notification">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-lg font-semibold text-green-900 mb-2">Welcome to BizConsult!</h3>
+                                <p class="text-green-800">{{ session('success') }}</p>
+                            </div>
+                            <button onclick="document.getElementById('success-notification').remove()" class="ml-4 flex-shrink-0 text-green-600 hover:text-green-800">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 @endif
                 @if(session('error'))
                     <div class="mb-6 p-4 bg-red-100 text-red-800 rounded-lg">{{ session('error') }}</div>

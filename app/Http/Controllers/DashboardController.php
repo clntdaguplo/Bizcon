@@ -41,7 +41,29 @@ class DashboardController extends Controller
 
         $totalVerifiedConsultants = \App\Models\ConsultantProfile::where('is_verified', true)->count();
 
-        return view('customer-folder.dashboard', compact('featuredConsultants', 'totalVerifiedConsultants'));
+        // Get customer's consultation statistics
+        $customerConsultations = \App\Models\Consultation::where('customer_id', Auth::id())
+            ->with(['consultantProfile.user'])
+            ->get();
+        
+        $activeBookings = $customerConsultations->whereIn('status', ['Pending', 'Accepted', 'Proposed'])->count();
+        $completedSessions = $customerConsultations->where('status', 'Completed')->count();
+        
+        // Get recent completed consultations
+        $completedConsultations = \App\Models\Consultation::where('customer_id', Auth::id())
+            ->where('status', 'Completed')
+            ->with(['consultantProfile.user'])
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
+        return view('customer-folder.dashboard', compact(
+            'featuredConsultants', 
+            'totalVerifiedConsultants',
+            'activeBookings',
+            'completedSessions',
+            'completedConsultations'
+        ));
     }
 
     // Consultant dashboard

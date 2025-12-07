@@ -298,7 +298,7 @@
             <!-- Footer -->
     <footer class="bg-gray-900 text-gray-300 py-16">
         <div class="container mx-auto px-6">
-            <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8 justify-items-center">
                 <!-- BizConsult Intro -->
                 <div>
                     <h3 class="text-2xl font-semibold text-white mb-4">BizConsult</h3>
@@ -321,17 +321,9 @@
                 </div>
             </div>
 
-            <div class="border-t border-gray-700 mt-12 pt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center">
-                    <div class="flex items-center mb-4 md:mb-0">
-                        <img src="{{ asset('images/Bizcon.png') }}" alt="BizConsult Logo" class="h-10 w-auto mr-4">
-                        <span class="text-white font-semibold">BizConsult</span>
-                    </div>
-                    <div class="text-center md:text-right">
+            <div class="border-t border-gray-700 mt-12 pt-8 text-center">
                 <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
-                        <p class="text-sm mt-2">Empowering businesses through expert consulting services.</p>
-                    </div>
-                </div>
+                <p class="text-sm mt-2">Empowering businesses through expert consulting services.</p>
             </div>
         </div>
             </footer>

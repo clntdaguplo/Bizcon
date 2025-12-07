@@ -144,6 +144,40 @@
             </div>
         @endif
 
+        {{-- Pending Update Notice --}}
+        @if($profile->has_pending_update && $profile->previous_values)
+            <div class="bg-purple-50 border-l-4 border-purple-500 rounded-lg shadow p-6 mb-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-purple-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-purple-900 mb-1">Profile Update Pending Approval</h3>
+                            <p class="text-sm text-purple-800 mb-2">
+                                Your profile update request was submitted on {{ $profile->update_requested_at->format('M d, Y \a\t g:i A') }} and is awaiting admin approval.
+                            </p>
+                            <p class="text-xs text-purple-700">
+                                You can cancel this update request to restore your profile to the previous approved values.
+                            </p>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('consultant.profile.cancel-update') }}" 
+                          onsubmit="return confirm('Are you sure you want to cancel this update request? Your profile will be restored to the previous approved values.');"
+                          class="ml-4">
+                        @csrf
+                        <button type="submit" 
+                                class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Cancel Update
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         <!-- Profile Form -->
         <form method="POST"
             action="{{ $profile->exists ? route('consultant.profile.update') : route('consultant.profile.save') }}"
@@ -305,8 +339,8 @@
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Resume</h2>
                 <div class="space-y-4">
                     @if ($profile->resume_path)
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div class="flex items-center">
+                        <div class="flex flex-col p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center mb-3">
                                 <svg class="w-8 h-8 text-red-500 mr-3" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -319,7 +353,13 @@
                                 </div>
                             </div>
                             <a href="{{ asset('storage/' . $profile->resume_path) }}" target="_blank"
-                                class="text-blue-600 hover:underline text-sm">View</a>
+                                class="inline-flex items-center justify-center w-fit px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition border border-blue-200">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                View Resume
+                            </a>
                         </div>
                     @endif
 

@@ -59,6 +59,11 @@ class Consultation extends Model
         return $this->hasMany(ConsultationNotification::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(ConsultationMessage::class)->orderBy('created_at');
+    }
+
     public function customerRating()
     {
         return $this->hasOne(ConsultationRating::class)->where('rater_type', 'customer');

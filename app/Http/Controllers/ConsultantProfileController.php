@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ConsultantProfile;
 use App\Models\ConsultationRating;
+use App\Models\ConsultationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
@@ -43,7 +44,7 @@ class ConsultantProfileController extends Controller
         $user->consultant_rules_accepted = true;
         $user->save();
 
-        return redirect()->route('consultant.profile');
+        return redirect()->route('dashboard.consultant')->with('success', 'Thank you for creating your consultant account! We are excited to have you join our team of expert consultants. Please complete your profile to start receiving consultation requests from clients.');
     }
 
     public function profile()
@@ -96,6 +97,10 @@ class ConsultantProfileController extends Controller
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
+        // Check if this is a resubmission after rejection
+        $existingProfile = ConsultantProfile::where('user_id', Auth::id())->first();
+        $isResubmission = $existingProfile && $existingProfile->is_rejected;
+
         $createData = [
             'rules_accepted' => true,
             'full_name' => $validated['full_name'],
@@ -107,16 +112,23 @@ class ConsultantProfileController extends Controller
             'expertise' => implode(', ', $validated['expertise']),
             'resume_path' => $resumePath,
             'is_verified' => false,
+            // Preserve rejection history - DON'T clear admin_note or rejected_at
+            // Only clear is_rejected flag to allow it to appear in pending queue
+            'is_rejected' => false, // Clear rejection flag so it appears in pending queue
+            'resubmitted_at' => $isResubmission ? now() : null,
+            'resubmission_count' => $isResubmission ? ($existingProfile->resubmission_count ?? 0) + 1 : 0,
         ];
 
         if (Schema::hasColumn('consultant_profiles', 'avatar_path')) {
             $createData['avatar_path'] = $avatarPath;
         }
 
-        ConsultantProfile::updateOrCreate(
-            ['user_id' => Auth::id()],
-            $createData
-        );
+        // Use update() instead of updateOrCreate to preserve existing fields like admin_note and rejected_at
+        if ($existingProfile) {
+            $existingProfile->update($createData);
+        } else {
+            ConsultantProfile::create(array_merge(['user_id' => Auth::id()], $createData));
+        }
         // Make sure user's flag is set when profile is created
         $user = Auth::user();
         if (! $user->consultant_rules_accepted) {
@@ -142,6 +154,20 @@ class ConsultantProfileController extends Controller
             'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
         ]);
 
+        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        $wasVerified = $profile->is_verified && !$profile->is_rejected;
+        
+        // Handle avatar upload separately - it doesn't require approval
+        $avatarChanged = false;
+        if ($request->hasFile('avatar')) {
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            // Apply avatar immediately without approval
+            $profile->avatar_path = $avatarPath;
+            $profile->save();
+            $avatarChanged = true;
+        }
+
+        // Prepare update data for other fields (excluding avatar)
         $updateData = [
             'full_name' => $request->full_name,
             'email' => $request->email,
@@ -151,19 +177,11 @@ class ConsultantProfileController extends Controller
             'expertise' => implode(', ', $request->expertise),
             'address' => $request->address,
             'rules_accepted' => true,
-            // Any profile update requires admin to approve again
-            'is_verified' => false,
         ];
         // Do not write nulls to non-nullable DB columns
         $updateData = array_filter($updateData, static function ($value) {
             return !is_null($value);
         });
-
-        // Handle avatar upload
-        if ($request->hasFile('avatar')) {
-            $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            $updateData['avatar_path'] = $avatarPath;
-        }
 
         // Handle resume upload
         if ($request->hasFile('resume')) {
@@ -171,11 +189,128 @@ class ConsultantProfileController extends Controller
             $updateData['resume_path'] = $resumePath;
         }
 
-        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        // Check if any non-avatar fields have changed
+        $fieldsToCheck = ['full_name', 'email', 'phone_number', 'age', 'sex', 'expertise', 'address', 'resume_path'];
+        $hasOtherChanges = false;
+        foreach ($fieldsToCheck as $field) {
+            $oldValue = $profile->$field ?? null;
+            $newValue = $updateData[$field] ?? null;
+            
+            // For expertise, compare as strings
+            if ($field === 'expertise') {
+                $oldValue = $profile->expertise ?? '';
+                $newValue = implode(', ', $request->expertise);
+            }
+            
+            if ($oldValue != $newValue) {
+                $hasOtherChanges = true;
+                break;
+            }
+        }
+        
+        // If only avatar changed, no approval needed
+        if (!$hasOtherChanges && $avatarChanged) {
+            return back()->with('success', 'Profile picture updated successfully.');
+        }
+        
+        // If no changes at all (not even avatar), just return
+        if (!$hasOtherChanges && !$avatarChanged) {
+            return back()->with('info', 'No changes detected.');
+        }
+        
+        // If other fields changed, require approval (but avatar already applied)
+        if ($hasOtherChanges) {
+            $updateData['is_verified'] = false;
+            
+            // If profile was already verified, store previous values for comparison
+            if ($wasVerified) {
+                // Store the current approved values before updating (excluding avatar)
+                $previousValues = [
+                    'full_name' => $profile->full_name,
+                    'email' => $profile->email,
+                    'phone_number' => $profile->phone_number,
+                    'age' => $profile->age,
+                    'sex' => $profile->sex,
+                    'expertise' => $profile->expertise,
+                    'address' => $profile->address,
+                    'resume_path' => $profile->resume_path,
+                    // Note: avatar_path is NOT stored - profile picture doesn't need approval
+                ];
+                
+                $updateData['previous_values'] = $previousValues;
+                $updateData['has_pending_update'] = true;
+                $updateData['update_requested_at'] = now();
+            }
+        }
+        
+        // If updating a rejected profile, mark as resubmission
+        $isResubmission = $profile->is_rejected;
+        if ($isResubmission) {
+            $updateData['is_rejected'] = false; // Clear rejection flag to appear in pending
+            $updateData['resubmitted_at'] = now();
+            $updateData['resubmission_count'] = ($profile->resubmission_count ?? 0) + 1;
+        }
+        // Preserve rejection history (admin_note, rejected_at) - don't include in $updateData
+        
+        // Update profile with other field changes
         $profile->update($updateData);
 
-        return back()->with('success', 'Profile updated successfully.');
+        // Build success message
+        $message = '';
+        if ($isResubmission) {
+            $message = 'Profile resubmitted for review. Pending approval.';
+            if ($avatarChanged) {
+                $message .= ' Profile picture updated immediately.';
+            }
+        } elseif ($hasOtherChanges && $wasVerified) {
+            $message = 'Update request submitted. Pending admin approval.';
+            if ($avatarChanged) {
+                $message .= ' Profile picture updated immediately.';
+            }
+        } else {
+            $message = 'Profile updated successfully.';
+            if ($avatarChanged) {
+                $message .= ' Profile picture updated.';
+            }
+        }
+        
+        return back()->with('success', $message);
     }
+
+    public function cancelUpdate()
+    {
+        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        
+        // Check if there's a pending update
+        if (!$profile->has_pending_update || !$profile->previous_values) {
+            return back()->with('error', 'No pending update to cancel.');
+        }
+        
+        // Restore previous values
+        $previousValues = $profile->previous_values;
+        
+        $restoreData = [
+            'full_name' => $previousValues['full_name'] ?? $profile->full_name,
+            'email' => $previousValues['email'] ?? $profile->email,
+            'phone_number' => $previousValues['phone_number'] ?? $profile->phone_number,
+            'age' => $previousValues['age'] ?? $profile->age,
+            'sex' => $previousValues['sex'] ?? $profile->sex,
+            'expertise' => $previousValues['expertise'] ?? $profile->expertise,
+            'address' => $previousValues['address'] ?? $profile->address,
+            'resume_path' => $previousValues['resume_path'] ?? $profile->resume_path,
+            // Clear pending update flags
+            'has_pending_update' => false,
+            'update_requested_at' => null,
+            'previous_values' => null,
+            // Restore verification status if it was verified before
+            'is_verified' => true,
+        ];
+        
+        $profile->update($restoreData);
+        
+        return back()->with('success', 'Profile update request cancelled. Your profile has been restored to the previous approved values.');
+    }
+
     public function create()
     {
         return view('consultant-verify');
