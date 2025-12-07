@@ -7,8 +7,20 @@
 <div class="space-y-6">
     <!-- Header -->
     <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">All Customers</h2>
-        <p class="text-gray-600">Manage and view all customer accounts</p>
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">All Customers</h2>
+                <p class="text-gray-600">Manage and view all customer accounts</p>
+            </div>
+            <div>
+                <a href="{{ route('admin.customers.suspended') }}" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                    Suspended Customers
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- Statistics Cards -->
@@ -35,8 +47,8 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Active</p>
-                    <p class="text-2xl font-semibold text-gray-900">{{ $customers->count() }}</p>
+                    <p class="text-sm font-medium text-gray-600">Active Customers</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $customers->total() }}</p>
                 </div>
             </div>
         </div>
@@ -58,30 +70,50 @@
 
     <!-- Search and Filter -->
     <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex flex-col sm:flex-row gap-4">
+        <form method="GET" action="{{ route('admin.customers') }}" class="flex flex-col sm:flex-row gap-4">
             <div class="flex-1">
                 <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search Customers</label>
-                <input type="text" id="search" placeholder="Search by name or email..." class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <input type="text" 
+                       id="search" 
+                       name="search"
+                       value="{{ request('search') }}"
+                       placeholder="Search by name or email..." 
+                       class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
             </div>
             <div class="sm:w-48">
-                <label for="date-filter" class="block text-sm font-medium text-gray-700 mb-2">Registration Date</label>
-                <select id="date-filter" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Time</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="year">This Year</option>
-                </select>
-            </div>
-            <div class="sm:w-48">
-                <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select id="status-filter" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="status" 
+                        name="status"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                 </select>
             </div>
-        </div>
+            <div class="sm:w-48">
+                <label for="date_filter" class="block text-sm font-medium text-gray-700 mb-2">Registration Date</label>
+                <select id="date_filter" 
+                        name="date_filter"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Time</option>
+                    <option value="today" {{ request('date_filter') === 'today' ? 'selected' : '' }}>Today</option>
+                    <option value="week" {{ request('date_filter') === 'week' ? 'selected' : '' }}>This Week</option>
+                    <option value="month" {{ request('date_filter') === 'month' ? 'selected' : '' }}>This Month</option>
+                    <option value="year" {{ request('date_filter') === 'year' ? 'selected' : '' }}>This Year</option>
+                </select>
+            </div>
+            <div class="sm:w-32 flex items-end">
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition font-medium">
+                    Search
+                </button>
+            </div>
+            @if(request()->hasAny(['search', 'status', 'date_filter']))
+            <div class="sm:w-32 flex items-end">
+                <a href="{{ route('admin.customers') }}" class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition font-medium text-center">
+                    Clear
+                </a>
+            </div>
+            @endif
+        </form>
     </div>
 
     <!-- Customers Table -->
@@ -125,9 +157,15 @@
                                 <div class="text-sm text-gray-500">Registered User</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Active
-                                </span>
+                                @if($customer->is_suspended)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        Suspended
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $customer->created_at->format('M d, Y') }}
@@ -136,13 +174,12 @@
                                 {{ $customer->updated_at->diffForHumans() }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div class="flex space-x-2">
-                                    <a href="{{ route('admin.customers.show', $customer->id) }}" class="text-blue-600 hover:text-blue-900">
-                                        View Profile
-                                    </a>
-                                    <button class="text-green-600 hover:text-green-900">Message</button>
-                                    <button class="text-red-600 hover:text-red-900">Suspend</button>
-                                </div>
+                                <a href="{{ route('admin.customers.show', $customer->id) }}" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 hover:border-blue-300">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    View Profile
+                                </a>
                             </td>
                         </tr>
                     @empty

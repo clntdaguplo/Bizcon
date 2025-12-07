@@ -19,11 +19,33 @@
     </header>
 
     <main class="min-h-screen pt-32 px-6">
-        <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
-            <h1 class="text-3xl font-bold mb-4">Consultant Profile</h1>
-            <p class="text-gray-700 mb-4">
-                Please complete your consultant profile. Your information helps clients understand your expertise.
-            </p>
+        <div class="max-w-2xl mx-auto">
+            @if(session('success'))
+                <div class="mb-6 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-xl shadow-md">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <h3 class="text-lg font-semibold text-green-900 mb-2">Welcome to BizConsult!</h3>
+                            <p class="text-green-800">{{ session('success') }}</p>
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" class="ml-4 flex-shrink-0 text-green-600 hover:text-green-800">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+            <div class="bg-white p-8 rounded-xl shadow-md">
+                <h1 class="text-3xl font-bold mb-4">Consultant Profile</h1>
+                <p class="text-gray-700 mb-4">
+                    Please complete your consultant profile. Your information helps clients understand your expertise.
+                </p>
             <div class="mb-6 p-4 rounded-lg border border-yellow-200 bg-yellow-50 text-sm text-yellow-900">
                 <strong>Note:</strong> You must finish your profile and submit all required details to
                 <span class="font-semibold">access and respond to consultation requests.</span>
@@ -100,6 +122,7 @@
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Submit</button>
             </form>
+            </div>
         </div>
     </main>
 

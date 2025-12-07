@@ -114,7 +114,7 @@
                                 </div>
                             @endif
                             
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-4">
                                 <div class="flex items-center">
                                     <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -134,6 +134,60 @@
                                     <span>Requested: {{ $consultation->created_at->format('M j, Y g:i A') }}</span>
                                 </div>
                             </div>
+                            
+                            @php
+                                $scheduledDateTime = null;
+                                if ($consultation->scheduled_date && $consultation->scheduled_time) {
+                                    $dateStr = $consultation->scheduled_date instanceof \Carbon\Carbon 
+                                        ? $consultation->scheduled_date->format('Y-m-d') 
+                                        : \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
+                                    $timeStr = is_string($consultation->scheduled_time) 
+                                        ? $consultation->scheduled_time 
+                                        : \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
+                                    $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                                } elseif ($consultation->preferred_date && $consultation->preferred_time) {
+                                    $dateStr = $consultation->preferred_date instanceof \Carbon\Carbon 
+                                        ? $consultation->preferred_date->format('Y-m-d') 
+                                        : \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
+                                    $timeStr = is_string($consultation->preferred_time) 
+                                        ? $consultation->preferred_time 
+                                        : \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
+                                    $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                                }
+                            @endphp
+                            
+                            @if($scheduledDateTime && in_array($consultation->status, ['Accepted', 'Pending', 'Proposed']))
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <div>
+                                                <div class="text-xs font-semibold text-gray-600 uppercase mb-1">Scheduled Consultation</div>
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    {{ $scheduledDateTime->format('F j, Y') }} at {{ $scheduledDateTime->format('g:i A') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-xs font-semibold text-blue-600 uppercase mb-1" id="clock-label-{{ $consultation->id }}">
+                                                @if($scheduledDateTime->isFuture())
+                                                    Time Remaining
+                                                @elseif($scheduledDateTime->isPast())
+                                                    Time Elapsed
+                                                @else
+                                                    Happening Now
+                                                @endif
+                                            </div>
+                                            <div class="text-lg font-bold text-blue-700 font-mono" id="live-clock-{{ $consultation->id }}">
+                                                <span id="clock-time-{{ $consultation->id }}">--:--:--</span>
+                                            </div>
+                                            <input type="hidden" id="scheduled-time-{{ $consultation->id }}" value="{{ $scheduledDateTime->timestamp }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         
                         <div class="mt-4 lg:mt-0 lg:ml-6 flex flex-col space-y-2">

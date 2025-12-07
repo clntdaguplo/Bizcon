@@ -16,6 +16,7 @@ class CustomerConsultantController extends Controller
         
         $consultants = ConsultantProfile::with('user')
             ->where('is_verified', true)
+            ->where('is_rejected', false) // Exclude suspended consultants
             ->when($query, function($q) use ($query) {
                 $normalized = mb_strtolower($query);
                 $q->where(function($sub) use ($normalized, $query) {
@@ -54,9 +55,11 @@ class CustomerConsultantController extends Controller
     public function getAllConsultants(Request $request)
     {
         $query = $request->get('q');
+        $topic = $request->get('topic'); // New parameter for topic-based filtering
         
         $consultants = ConsultantProfile::with('user')
             ->where('is_verified', true)
+            ->where('is_rejected', false) // Exclude suspended consultants
             ->when($query, function($q) use ($query) {
                 $normalized = mb_strtolower($query);
                 $q->where(function($sub) use ($normalized, $query) {
@@ -65,9 +68,48 @@ class CustomerConsultantController extends Controller
                         ->orWhere('email', 'like', "%".$query."%");
                 });
             })
+            ->when($topic, function($q) use ($topic) {
+                // Filter consultants where their expertise contains the topic
+                // Since expertise is comma-separated, we need to check if any expertise matches
+                $q->where(function($sub) use ($topic) {
+                    $topicNormalized = mb_strtolower(trim($topic));
+                    $sub->whereRaw('LOWER(expertise) LIKE ?', ['%' . $topicNormalized . '%']);
+                });
+            })
             ->orderByDesc('updated_at')
             ->get()
+            ->filter(function($consultant) use ($topic) {
+                // Additional filtering: ensure the topic exactly matches one of the consultant's expertise
+                if ($topic) {
+                    $expertiseList = $consultant->expertise 
+                        ? array_map('trim', explode(',', $consultant->expertise))
+                        : [];
+                    $topicNormalized = mb_strtolower(trim($topic));
+                    // Check if any expertise exactly matches (case-insensitive)
+                    foreach ($expertiseList as $expertise) {
+                        if (mb_strtolower(trim($expertise)) === $topicNormalized) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                return true;
+            })
             ->map(function($consultant) {
+                // Calculate average ratings
+                $ratings = \App\Models\ConsultationRating::whereHas('consultation', function($q) use ($consultant) {
+                    $q->where('consultant_profile_id', $consultant->id);
+                })
+                ->where('rater_type', 'customer')
+                ->get();
+                
+                $averageRating = null;
+                $totalRatings = 0;
+                if ($ratings->count() > 0) {
+                    $averageRating = round($ratings->avg('rating'), 1);
+                    $totalRatings = $ratings->count();
+                }
+                
                 return [
                     'id' => $consultant->id,
                     'full_name' => $consultant->full_name,
@@ -76,10 +118,13 @@ class CustomerConsultantController extends Controller
                     'phone_number' => $consultant->phone_number,
                     'avatar_path' => $consultant->avatar_path,
                     'is_verified' => $consultant->is_verified,
+                    'average_rating' => $averageRating,
+                    'total_ratings' => $totalRatings,
                     'created_at' => $consultant->created_at,
                     'updated_at' => $consultant->updated_at,
                 ];
-            });
+            })
+            ->values();
 
         return response()->json([
             'success' => true,

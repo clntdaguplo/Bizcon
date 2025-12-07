@@ -20,22 +20,77 @@
                             <th class="text-left px-4 py-2">Topic</th>
                             <th class="text-left px-4 py-2">Consultant</th>
                             <th class="text-left px-4 py-2">Requested</th>
-                            <th class="text-left px-4 py-2">Preferred Time</th>
+                            <th class="text-left px-4 py-2">Scheduled Time</th>
+                            <th class="text-left px-4 py-2">Live Clock</th>
                             <th class="text-left px-4 py-2">Status</th>
                             <th class="text-left px-4 py-2">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($consultations ?? [] as $consultation)
+                            @php
+                                $scheduledDateTime = null;
+                                if ($consultation->scheduled_date && $consultation->scheduled_time) {
+                                    $dateStr = $consultation->scheduled_date instanceof \Carbon\Carbon 
+                                        ? $consultation->scheduled_date->format('Y-m-d') 
+                                        : \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
+                                    $timeStr = is_string($consultation->scheduled_time) 
+                                        ? $consultation->scheduled_time 
+                                        : \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
+                                    $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                                } elseif ($consultation->preferred_date && $consultation->preferred_time) {
+                                    $dateStr = $consultation->preferred_date instanceof \Carbon\Carbon 
+                                        ? $consultation->preferred_date->format('Y-m-d') 
+                                        : \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
+                                    $timeStr = is_string($consultation->preferred_time) 
+                                        ? $consultation->preferred_time 
+                                        : \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
+                                    $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                                }
+                            @endphp
+                            
                             <tr id="consultation-{{ $consultation->id }}" class="border-t hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-2">{{ $consultation->topic }}</td>
                                 <td class="px-4 py-2">{{ optional(optional($consultation->consultantProfile)->user)->name ?? '—' }}</td>
                                 <td class="px-4 py-2">{{ $consultation->created_at->format('M j, Y') }}</td>
                                 <td class="px-4 py-2">
-                                    @if($consultation->preferred_date && $consultation->preferred_time)
-                                        {{ \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') }} {{ \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') }}
+                                    @if($scheduledDateTime)
+                                        <div class="text-sm text-gray-900">
+                                            {{ $scheduledDateTime->format('M j, Y') }}
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            {{ $scheduledDateTime->format('g:i A') }}
+                                        </div>
+                                    @elseif($consultation->preferred_date && $consultation->preferred_time)
+                                        <div class="text-sm text-gray-900">
+                                            {{ \Carbon\Carbon::parse($consultation->preferred_date)->format('M j, Y') }}
+                                        </div>
+                                        <div class="text-xs text-gray-600">
+                                            {{ \Carbon\Carbon::parse($consultation->preferred_time)->format('g:i A') }}
+                                        </div>
                                     @else
-                                        —
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2">
+                                    @if($scheduledDateTime && in_array($consultation->status, ['Accepted', 'Pending', 'Proposed']))
+                                        <div class="flex flex-col">
+                                            <div class="text-xs font-semibold text-blue-600 uppercase mb-1" id="clock-label-customer-{{ $consultation->id }}">
+                                                @if($scheduledDateTime->isFuture())
+                                                    Time Remaining
+                                                @elseif($scheduledDateTime->isPast())
+                                                    Time Elapsed
+                                                @else
+                                                    Happening Now
+                                                @endif
+                                            </div>
+                                            <div class="text-sm font-bold font-mono" id="live-clock-customer-{{ $consultation->id }}">
+                                                <span id="clock-time-customer-{{ $consultation->id }}" class="@if($scheduledDateTime->isFuture()) text-blue-700 @elseif($scheduledDateTime->isPast()) text-gray-600 @else text-green-600 @endif">--:--:--</span>
+                                            </div>
+                                            <input type="hidden" id="scheduled-time-customer-{{ $consultation->id }}" value="{{ $scheduledDateTime->timestamp }}">
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 text-xs">—</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-2">
@@ -60,106 +115,19 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-800 text-sm view-details-btn transition-colors" data-target="details-{{ $consultation->id }}">View</button>
-                                </td>
-                            </tr>
-                            <tr id="details-{{ $consultation->id }}" class="hidden border-t bg-gray-50 transition-all">
-                                <td colspan="6" class="px-4 py-4">
-                                    <div class="space-y-4">
-                                        <div>
-                                            <p class="font-semibold text-gray-800 mb-2">Request Details:</p>
-                                            @if($consultation->details)
-                                                <p class="text-gray-700">{{ $consultation->details }}</p>
-                                            @else
-                                                <p class="text-gray-500">No details were provided for this request.</p>
-                                            @endif
-                                        </div>
-
-                                        @if($consultation->proposal_status === 'pending' && $consultation->proposed_date)
-                                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                <p class="font-semibold text-blue-900 mb-2">🔄 New Schedule Proposed</p>
-                                                <p class="text-blue-800 mb-3">
-                                                    Consultant proposed a new schedule: 
-                                                    <strong>{{ \Carbon\Carbon::parse($consultation->proposed_date)->format('M j, Y') }} at {{ \Carbon\Carbon::parse($consultation->proposed_time)->format('g:i A') }}</strong>
-                                                </p>
-                                                <form method="POST" action="{{ route('customer.consultations.respond-proposal', $consultation->id) }}" class="flex gap-2">
-                                                    @csrf
-                                                    <button type="submit" name="proposal_response" value="accept" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                                        ✅ Accept new time
-                                                    </button>
-                                                    <button type="submit" name="proposal_response" value="decline" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                                                        ❌ Decline
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-
-                                        @if($consultation->status === 'Accepted' && $consultation->scheduled_date)
-                                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                                <p class="font-semibold text-green-900 mb-2">✅ Scheduled</p>
-                                                <p class="text-green-800 mb-2">
-                                                    <strong>Date & Time:</strong> 
-                                                    {{ \Carbon\Carbon::parse($consultation->scheduled_date)->format('M j, Y') }} at {{ \Carbon\Carbon::parse($consultation->scheduled_time)->format('g:i A') }}
-                                                </p>
-                                                @if($consultation->meeting_link)
-                                                    <a href="{{ $consultation->meeting_link }}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">
-                                                        🔗 Join Google Meet
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        @endif
-
-                                        @if($consultation->status === 'Completed')
-                                            @if($consultation->consultation_summary)
-                                                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-3">
-                                                    <p class="font-semibold text-purple-900 mb-2">📄 Consultation Report Available</p>
-                                                    <a href="{{ route('customer.consultations.report', $consultation->id) }}" target="_blank" class="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mt-2">
-                                                        Download Report
-                                                    </a>
-                                                </div>
-                                            @endif
-                                            
-                                            @php
-                                                $hasRated = \App\Models\ConsultationRating::where('consultation_id', $consultation->id)
-                                                    ->where('rater_id', Auth::id())
-                                                    ->where('rater_type', 'customer')
-                                                    ->exists();
-                                            @endphp
-                                            @if(!$hasRated)
-                                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                                    <p class="font-semibold text-yellow-900 mb-2">⭐ Rate Your Consultant</p>
-                                                    <a href="{{ route('customer.consultations.rate', $consultation->id) }}" class="inline-block bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 mt-2">
-                                                        Submit Rating
-                                                    </a>
-                                                </div>
-                                            @else
-                                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                                                    <p class="text-green-800">✅ You have rated this consultation</p>
-                                                </div>
-                                            @endif
-                                        @endif
-
-                                        @if(in_array($consultation->status, ['Pending', 'Proposed', 'Expired'], true))
-                                            <div class="border-t border-gray-200 pt-4 mt-4 flex gap-3">
-                                                <a href="{{ route('customer.consultations.edit', $consultation->id) }}"
-                                                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-                                                    ✏️ Edit Request
-                                                </a>
-                                                <form method="POST" action="{{ route('customer.consultations.cancel', $consultation->id) }}" class="inline-block"
-                                                      onsubmit="return confirm('Are you sure you want to cancel this consultation?');">
-                                                    @csrf
-                                                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors">
-                                                        ❌ Cancel Consultation
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
-                                    </div>
+                                    <a href="{{ route('customer.consultations.show', $consultation->id) }}" 
+                                       class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 hover:border-blue-300">
+                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        View Details
+                                    </a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-10 text-center text-gray-600">
+                                <td colspan="7" class="px-4 py-10 text-center text-gray-600">
                                     <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
@@ -183,19 +151,75 @@
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const viewButtons = document.querySelectorAll('.view-details-btn');
-
-        viewButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const targetId = this.getAttribute('data-target');
-                const detailsRow = document.getElementById(targetId);
-                const isHidden = detailsRow.classList.toggle('hidden');
-                this.textContent = isHidden ? 'View' : 'Hide';
-            });
+    // Live clocks for customer consultations
+    function updateCustomerConsultationClocks() {
+        document.querySelectorAll('[id^="scheduled-time-customer-"]').forEach(function(input) {
+            const consultationId = input.id.replace('scheduled-time-customer-', '');
+            const scheduledTimestamp = parseInt(input.value);
+            const scheduledTime = new Date(scheduledTimestamp * 1000);
+            const now = new Date();
+            const diff = scheduledTime - now;
+            
+            const clockElement = document.getElementById('clock-time-customer-' + consultationId);
+            const labelElement = document.getElementById('clock-label-customer-' + consultationId);
+            
+            if (!clockElement) return;
+            
+            const absDiff = Math.abs(diff);
+            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+            
+            let timeString = '';
+            let label = '';
+            
+            if (diff > 0) {
+                // Future consultation - countdown
+                label = 'Time Remaining';
+                if (days > 0) {
+                    timeString = `${days}d ${hours}h`;
+                } else if (hours > 0) {
+                    timeString = `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    timeString = `${minutes}m ${seconds}s`;
+                } else {
+                    timeString = `${seconds}s`;
+                }
+                clockElement.className = 'text-sm font-bold font-mono text-blue-700';
+            } else if (diff < 0) {
+                // Past consultation - elapsed time
+                label = 'Time Elapsed';
+                if (days > 0) {
+                    timeString = `${days}d ${hours}h ago`;
+                } else if (hours > 0) {
+                    timeString = `${hours}h ${minutes}m ago`;
+                } else if (minutes > 0) {
+                    timeString = `${minutes}m ago`;
+                } else {
+                    timeString = `${seconds}s ago`;
+                }
+                clockElement.className = 'text-sm font-bold font-mono text-gray-600';
+            } else {
+                // Happening now
+                label = 'Happening Now';
+                timeString = 'NOW';
+                clockElement.className = 'text-sm font-bold font-mono text-green-600';
+            }
+            
+            clockElement.textContent = timeString;
+            if (labelElement) {
+                labelElement.textContent = label;
+            }
         });
-
-        // If coming from a notification with a highlight param, scroll and highlight the row
+    }
+    
+    // Update customer consultation clocks immediately and then every second
+    updateCustomerConsultationClocks();
+    setInterval(updateCustomerConsultationClocks, 1000);
+    
+    // If coming from a notification with a highlight param, scroll and highlight the row
+    document.addEventListener('DOMContentLoaded', function () {
         const params = new URLSearchParams(window.location.search);
         const highlightId = params.get('highlight');
         if (highlightId) {

@@ -24,6 +24,7 @@ class User extends Authenticatable
         'role',
         'avatar_path',
         'consultant_rules_accepted',
+        'is_suspended',
     ];
 
     /**
@@ -44,6 +45,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'consultant_rules_accepted' => 'boolean',
+        'is_suspended' => 'boolean',
         'password' => 'hashed',
     ];
 }

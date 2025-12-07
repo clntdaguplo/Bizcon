@@ -229,62 +229,32 @@
     <!-- Footer -->
     <footer class="bg-gray-900 text-gray-300 py-16">
         <div class="container mx-auto px-6">
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Know Us -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-2 gap-8 justify-items-center">
+                <!-- BizConsult Intro -->
                 <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">Know Us</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('home') }}#about" class="hover:text-white transition duration-300">About Us</a></li>
-                        <li><a href="{{ route('home') }}#services" class="hover:text-white transition duration-300">Our Services</a></li>
-                        <li><a href="{{ route('consultants') }}" class="hover:text-white transition duration-300">Our Consultants</a></li>
-                        <li><a href="{{ route('signup') }}" class="hover:text-white transition duration-300">Become a Consultant Partner</a></li>
-                    </ul>
+                    <h3 class="text-2xl font-semibold text-white mb-4">BizConsult</h3>
+                    <p class="text-gray-300 leading-relaxed max-w-md">
+                        Your trusted partner for business consulting and professional services. 
+                        We help businesses grow, innovate, and achieve their goals through expert guidance, 
+                        strategic planning, and practical, results-driven solutions.
+                    </p>
                 </div>
 
-                <!-- IP Policy -->
+                <!-- Contact -->
                 <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">IP Policy</h3>
+                    <h3 class="text-xl font-semibold text-white mb-6">CONTACT US</h3>
                     <ul class="space-y-3">
-                        <li><a href="#" class="hover:text-white transition duration-300">Our Policies</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Privacy Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Editorial Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Refund Policy</a></li>
-                    </ul>
-                </div>
-
-                <!-- Grievance -->
-                <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">Grievance Redressal</h3>
-                    <ul class="space-y-3">
-                        <li><a href="#" class="hover:text-white transition duration-300">Grievance Redressal Policy</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Contact Support</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Report Issue</a></li>
-                    </ul>
-                </div>
-
-                <!-- Other -->
-                <div>
-                    <h3 class="text-xl font-semibold text-white mb-6">Other</h3>
-                    <ul class="space-y-3">
-                        <li><a href="#" class="hover:text-white transition duration-300">Terms and Conditions</a></li>
-                        <li><a href="{{ route('login') }}" class="hover:text-white transition duration-300">Login</a></li>
-                        <li><a href="{{ route('signup') }}" class="hover:text-white transition duration-300">Sign Up</a></li>
-                        <li><a href="#" class="hover:text-white transition duration-300">Contact Us</a></li>
+                        <li><a href="mailto:bizconsult@gmail.com" class="hover:text-white transition duration-300">bizconsult@gmail.com</a></li>
+                        <li><span class="hover:text-white transition duration-300">Uc Main Sancianqko St, Avocado Bldg, 5th Floor</span></li>
+                        <li><span class="hover:text-white transition duration-300">Cebu City</span></li>
+                        <li><a href="tel:+09123456789" class="hover:text-white transition duration-300">+0912 345 6789</a></li>
                     </ul>
                 </div>
             </div>
 
-            <div class="border-t border-gray-700 mt-12 pt-8">
-                <div class="flex flex-col md:flex-row justify-between items-center">
-                    <div class="flex items-center mb-4 md:mb-0">
-                        <img src="{{ asset('images/Bizcon.png') }}" alt="BizConsult Logo" class="h-10 w-auto mr-4">
-                        <span class="text-white font-semibold">BizConsult</span>
-                    </div>
-                    <div class="text-center md:text-right">
-                        <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
-                        <p class="text-sm mt-2">Empowering businesses through expert consulting services.</p>
-                    </div>
-                </div>
+            <div class="border-t border-gray-700 mt-12 pt-8 text-center">
+                <p>&copy; {{ date('Y') }} BizConsult. All rights reserved.</p>
+                <p class="text-sm mt-2">Empowering businesses through expert consulting services.</p>
             </div>
         </div>
     </footer>
@@ -366,6 +336,14 @@
                                                 <div class="flex-1">
                                                     <h3 class="text-xl font-bold text-gray-900">${c.full_name}</h3>
                                                     ${expertiseHtml}
+                                                    <div class="flex items-center mt-4 space-x-3">
+                                                        <div class="flex items-center">
+                                                            <svg class="w-4 h-4 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                            <span class="text-sm text-green-600 font-medium">Verified</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="space-y-2 mb-4">
@@ -381,6 +359,9 @@
                                                    class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
                                                     Request Consultation
                                                 </a>
+                                                <button class="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300">
+                                                    View Profile
+                                                </button>
                                             </div>
                                         </div>
                                     `;

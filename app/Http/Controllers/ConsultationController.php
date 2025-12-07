@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ConsultationController extends Controller
 {
@@ -19,11 +20,15 @@ class ConsultationController extends Controller
             'consultant_id' => 'required|exists:consultant_profiles,id',
             'topic' => 'required|string|max:255',
             'details' => 'nullable|string',
-            'preferred_date' => 'nullable|date',
-            'preferred_time' => 'nullable',
+            'preferred_date' => 'required|date|after_or_equal:today',
+            'preferred_time' => 'required',
+        ], [
+            'preferred_date.required' => 'Please select a preferred date for the consultation.',
+            'preferred_date.after_or_equal' => 'The preferred date must be today or a future date.',
+            'preferred_time.required' => 'Please select a preferred time for the consultation.',
         ]);
 
-        Consultation::create([
+        $consultation = Consultation::create([
             'customer_id' => Auth::id(),
             'consultant_profile_id' => (int) $validated['consultant_id'],
             'topic' => $validated['topic'],
@@ -32,6 +37,27 @@ class ConsultationController extends Controller
             'preferred_time' => $validated['preferred_time'] ?? null,
             'status' => 'Pending',
         ]);
+
+        // Booking request is separate from messaging system
+        // Messages can be sent independently through the chat interface after booking is created
+
+        // Notify consultant about new consultation request
+        $consultantProfile = ConsultantProfile::find((int) $validated['consultant_id']);
+        if ($consultantProfile && $consultantProfile->user_id) {
+            $preferredDateText = \Carbon\Carbon::parse($validated['preferred_date'])->format('M j, Y');
+            $preferredTimeText = \Carbon\Carbon::parse($validated['preferred_time'])->format('g:i A');
+            
+            $this->createNotification(
+                $consultation,
+                $consultantProfile->user_id,
+                'status_change',
+                'New Consultation Request',
+                "You have received a new consultation request for '{$validated['topic']}'.\n\n" .
+                "Preferred Date: {$preferredDateText}\n" .
+                "Preferred Time: {$preferredTimeText}\n\n" .
+                ($validated['details'] ? "Details: " . \Illuminate\Support\Str::limit($validated['details'], 200) : '')
+            );
+        }
 
         return redirect()->route('customer.my-consults')->with('success', 'Consultation request submitted.');
     }
@@ -78,10 +104,16 @@ class ConsultationController extends Controller
     // Show consultation requests for the authenticated customer
     public function customerHistory()
     {
-        $consultations = Consultation::with(['consultantProfile.user'])
+        $query = Consultation::with(['consultantProfile.user'])
             ->where('customer_id', Auth::id())
-            ->orderByDesc('created_at')
-            ->paginate(12);
+            ->orderByDesc('created_at');
+            
+        // Only eager load messages if the table exists
+        if (\Illuminate\Support\Facades\Schema::hasTable('consultation_messages')) {
+            $query->with('messages.sender');
+        }
+        
+        $consultations = $query->paginate(12);
 
         // Auto-expire old pending/proposed requests based on preferred date
         foreach ($consultations as $consultation) {
@@ -126,14 +158,30 @@ class ConsultationController extends Controller
 
     public function completeConsultation($id)
     {
-        $consultation = Consultation::where('consultant_profile_id', 
-            ConsultantProfile::where('user_id', Auth::id())->first()->id)
+        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        $consultation = Consultation::where('consultant_profile_id', $profile->id)
             ->findOrFail($id);
+        
+        // Only allow completing if status is Accepted
+        if ($consultation->status !== 'Accepted') {
+            return back()->withErrors(['error' => 'You can only complete consultations that are Accepted.']);
+        }
         
         $consultation->status = 'Completed';
         $consultation->save();
 
-        return back()->with('success', 'Consultation marked as completed.');
+        // Notify customer that consultation is completed
+        $this->createNotification(
+            $consultation,
+            $consultation->customer_id,
+            'status_change',
+            'Consultation Completed',
+            "Your consultation for '{$consultation->topic}' has been marked as completed by the consultant. " .
+            "You can now view the consultation report and provide feedback."
+        );
+
+        return redirect()->route('consultant.consultations.report', $consultation->id)
+            ->with('success', 'Consultation marked as completed! Please create a consultation report.');
     }
 
     public function respondToConsultation(Request $request, $id)
@@ -297,15 +345,24 @@ class ConsultationController extends Controller
 
             // Create notification for consultant
             $profile = $consultation->consultantProfile;
+            $proposedDateText = $consultation->proposed_date 
+                ? \Carbon\Carbon::parse($consultation->proposed_date)->format('M j, Y') 
+                : 'the proposed date';
+            $proposedTimeText = $consultation->proposed_time 
+                ? \Carbon\Carbon::parse($consultation->proposed_time)->format('g:i A') 
+                : 'the proposed time';
+            
             $this->createNotification(
                 $consultation,
                 $profile->user_id,
                 'proposal',
-                'Proposal Declined',
-                "Client declined your proposed schedule for '{$consultation->topic}'. Please propose another time."
+                'Proposal Declined by Client',
+                "The client has declined your proposed schedule for '{$consultation->topic}'.\n\n" .
+                "Proposed Schedule: {$proposedDateText} at {$proposedTimeText}\n\n" .
+                "The consultation request is now back to Pending status. Please propose a new schedule or contact the client to discuss alternative times."
             );
 
-            $message = 'Proposed schedule declined.';
+            $message = 'Proposed schedule declined. The consultant has been notified.';
         }
 
         $consultation->save();
@@ -343,6 +400,27 @@ class ConsultationController extends Controller
         }
 
         return back()->with('success', 'Your consultation has been cancelled.');
+    }
+
+    /**
+     * Show customer's consultation details page
+     */
+    public function show($id)
+    {
+        $query = Consultation::where('customer_id', Auth::id())
+            ->with(['consultantProfile.user', 'customer']);
+            
+        // Only eager load messages if the table exists
+        if (Schema::hasTable('consultation_messages')) {
+            $query->with('messages.sender');
+        }
+        
+        $consultation = $query->findOrFail($id);
+        
+        // Auto-expire if needed
+        $consultation->markExpiredIfPastPreferredDate();
+
+        return view('customer-folder.consultation-details', compact('consultation'));
     }
 
     /**
@@ -417,6 +495,58 @@ class ConsultationController extends Controller
 
         return redirect()->route('customer.my-consults')
             ->with('success', 'Your consultation request has been updated successfully.');
+    }
+
+    /**
+     * Generate Google Meet link for an accepted consultation
+     */
+    public function generateMeetLink($id)
+    {
+        $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
+        $consultation = Consultation::where('consultant_profile_id', $profile->id)
+            ->findOrFail($id);
+
+        // Only allow generating link for accepted consultations
+        if ($consultation->status !== 'Accepted') {
+            return back()->withErrors(['error' => 'You can only generate a meeting link for accepted consultations.']);
+        }
+
+        // Check if there's a scheduled or preferred date/time
+        if (!$consultation->scheduled_date && !$consultation->preferred_date) {
+            return back()->withErrors(['error' => 'Please schedule a date and time first before generating a meeting link.']);
+        }
+
+        // Check if link already exists
+        if ($consultation->meeting_link) {
+            return back()->with('info', 'A meeting link already exists for this consultation.');
+        }
+
+        // Generate the Google Meet link (this method already saves the consultation)
+        $this->createGoogleMeetLink($consultation, $profile);
+        
+        // Refresh consultation to get the updated meeting_link
+        $consultation->refresh();
+
+        // Notify customer that meeting link is available
+        $scheduledDate = $consultation->scheduled_date ?? $consultation->preferred_date;
+        $scheduledTime = $consultation->scheduled_time ?? $consultation->preferred_time;
+        $dateText = \Carbon\Carbon::parse($scheduledDate)->format('M j, Y');
+        $timeText = \Carbon\Carbon::parse($scheduledTime)->format('g:i A');
+
+        // Send direct message/notification to client with the meeting link
+        $this->createNotification(
+            $consultation,
+            $consultation->customer_id,
+            'status_change',
+            '🔗 Google Meet Link Ready',
+            "Hello! Your consultant has generated a Google Meet link for your consultation.\n\n" .
+            "📅 Consultation: {$consultation->topic}\n" .
+            "📆 Date & Time: {$dateText} at {$timeText}\n\n" .
+            "🔗 Meeting Link:\n{$consultation->meeting_link}\n\n" .
+            "Click the link above to join the meeting at the scheduled time. See you there!"
+        );
+
+        return back()->with('success', 'Google Meet link generated successfully. The client has been notified.');
     }
 
     /**
@@ -638,9 +768,15 @@ class ConsultationController extends Controller
     public function openRequest($id)
     {
         $profile = ConsultantProfile::where('user_id', Auth::id())->firstOrFail();
-        $consultation = Consultation::with(['customer', 'consultantProfile'])
-            ->where('consultant_profile_id', $profile->id)
-            ->findOrFail($id);
+        $query = Consultation::with(['customer', 'consultantProfile.user'])
+            ->where('consultant_profile_id', $profile->id);
+            
+        // Only eager load messages if the table exists
+        if (\Illuminate\Support\Facades\Schema::hasTable('consultation_messages')) {
+            $query->with('messages.sender');
+        }
+        
+        $consultation = $query->findOrFail($id);
 
         // If this request is already past its preferred date, mark as expired and block actions
         $consultation->markExpiredIfPastPreferredDate();
@@ -661,8 +797,14 @@ class ConsultationController extends Controller
             abort(403, 'Only admins can view this page.');
         }
 
-        $consultation = Consultation::with(['customer', 'consultantProfile.user'])
-            ->findOrFail($id);
+        $query = Consultation::with(['customer', 'consultantProfile.user']);
+        
+        // Only eager load messages if the table exists
+        if (\Illuminate\Support\Facades\Schema::hasTable('consultation_messages')) {
+            $query->with('messages.sender');
+        }
+        
+        $consultation = $query->findOrFail($id);
 
         return view('admin-folder.consultation-show', compact('consultation'));
     }
