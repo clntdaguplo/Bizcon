@@ -97,6 +97,42 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
     Route::get('/customer/dashboard', [DashboardController::class, 'customer'])->name('customer.dashboard');
     // Customer dashboard subpages
     Route::get('/customer/new-consult', function() {
+        // Block new consults if no plan, trial expired/used, or pro pending/rejected/expired
+        if (\Illuminate\Support\Facades\Schema::hasTable('subscriptions')) {
+            $sub = \App\Models\Subscription::where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->first();
+            
+            if (!$sub) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Please choose a plan (Free Trial or Subscription) to book consultations.']);
+            }
+            
+            $trialUsedUp = $sub->plan_type === 'free_trial' && (
+                ($sub->expires_at && now()->greaterThanOrEqualTo($sub->expires_at)) ||
+                ($sub->minutes_total ?? 0) <= ($sub->minutes_used ?? 0)
+            );
+            $hasActivePro = $sub->plan_type === 'pro' && 
+                in_array($sub->payment_status, ['approved', 'not_required']) && 
+                $sub->status === 'active' &&
+                (!$sub->expires_at || now()->lessThan($sub->expires_at));
+            
+            if ($trialUsedUp && !$hasActivePro) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your free trial has been used. Subscribe to continue booking consultations.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->payment_status === 'rejected') {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your payment was rejected. Please submit a new payment to continue.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->payment_status === 'pending') {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your subscription payment is pending. Please wait for approval to book consultations.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->expires_at && now()->greaterThanOrEqualTo($sub->expires_at)) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your subscription has expired. Please renew to continue booking consultations.']);
+            }
+        }
+        
         $selectedConsultant = null;
         if (request()->filled('consultant')) {
             $selectedConsultant = \App\Models\ConsultantProfile::where('is_verified', true)
@@ -124,6 +160,41 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
         return view('customer-folder.new-consult', compact('selectedConsultant'));
     })->name('customer.new-consult');
     Route::get('/customer/new_consult', function() {
+        // Block new consults if no plan, trial expired/used, or pro pending/rejected/expired
+        if (\Illuminate\Support\Facades\Schema::hasTable('subscriptions')) {
+            $sub = \App\Models\Subscription::where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->first();
+            
+            if (!$sub) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Please choose a plan (Free Trial or Subscription) to book consultations.']);
+            }
+            
+            $trialUsedUp = $sub->plan_type === 'free_trial' && (
+                ($sub->expires_at && now()->greaterThanOrEqualTo($sub->expires_at)) ||
+                ($sub->minutes_total ?? 0) <= ($sub->minutes_used ?? 0)
+            );
+            $hasActivePro = $sub->plan_type === 'pro' && 
+                in_array($sub->payment_status, ['approved', 'not_required']) && 
+                $sub->status === 'active' &&
+                (!$sub->expires_at || now()->lessThan($sub->expires_at));
+            
+            if ($trialUsedUp && !$hasActivePro) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your free trial has been used. Subscribe to continue booking consultations.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->payment_status === 'rejected') {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your payment was rejected. Please submit a new payment to continue.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->payment_status === 'pending') {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your subscription payment is pending. Please wait for approval to book consultations.']);
+            }
+            
+            if ($sub->plan_type === 'pro' && $sub->expires_at && now()->greaterThanOrEqualTo($sub->expires_at)) {
+                return redirect()->route('customer.plans')->withErrors(['error' => 'Your subscription has expired. Please renew to continue booking consultations.']);
+            }
+        }
         return view('customer-folder.new-consult');
     })->name('customer.new_consult');
 
@@ -156,6 +227,10 @@ Route::middleware(['auth', 'role:Customer'])->group(function () {
 
     Route::get('/customer/profile', [CustomerProfileController::class, 'edit'])->name('customer.profile');
     Route::put('/customer/profile', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    
+    // Subscription plans
+    Route::get('/customer/plans', [\App\Http\Controllers\SubscriptionController::class, 'show'])->name('customer.plans');
+    Route::post('/customer/plans', [\App\Http\Controllers\SubscriptionController::class, 'choose'])->name('customer.plans.choose');
 
     // Customers: see all consultants (verified only)
     Route::get('/customer/consultants', [CustomerConsultantController::class, 'index'])->name('customer.consultants');
@@ -240,6 +315,17 @@ Route::middleware(['auth', 'role:Consultant'])->group(function () {
     // Messaging routes for consultants
     Route::post('/consultant/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('consultant.consultations.messages.store');
     Route::get('/consultant/consultations/{id}/messages', [\App\Http\Controllers\MessageController::class, 'index'])->name('consultant.consultations.messages.index');
+    
+    // Consultant-Admin Messaging routes
+    Route::get('/consultant/messages/admin', function() {
+        $profile = \App\Models\ConsultantProfile::where('user_id', Auth::id())->first();
+        if (!$profile) {
+            return back()->withErrors(['error' => 'Profile not found. Please complete your profile first.']);
+        }
+        return view('consultant-folder.messages-admin');
+    })->name('consultant.messages.admin');
+    Route::post('/consultant/messages/admin/{id}', [\App\Http\Controllers\AdminConsultantMessageController::class, 'consultantStore'])->name('consultant.messages.admin.store');
+    Route::get('/consultant/messages/admin/{id}/api', [\App\Http\Controllers\AdminConsultantMessageController::class, 'index'])->name('consultant.messages.admin.index');
 });
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin');
@@ -254,12 +340,21 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::post('/admin/consultants/{id}/reject-update', [AdminConsultantController::class, 'rejectUpdate'])->name('admin.consultants.reject-update');
     Route::get('/admin/consultants', [AdminConsultantController::class, 'consultants'])->name('admin.consultants');
     Route::get('/admin/consultants/{id}', [AdminConsultantController::class, 'show'])->name('admin.consultants.show');
+    
+    // Admin-Consultant Messaging routes
+    Route::get('/admin/consultants/{id}/messages', [\App\Http\Controllers\AdminConsultantMessageController::class, 'showMessages'])->name('admin.consultants.messages');
+    Route::post('/admin/consultants/{id}/messages', [\App\Http\Controllers\AdminConsultantMessageController::class, 'adminStore'])->name('admin.consultants.messages.store');
+    Route::get('/admin/consultants/{id}/messages/api', [\App\Http\Controllers\AdminConsultantMessageController::class, 'index'])->name('admin.consultants.messages.index');
     Route::get('/admin/customers', [AdminConsultantController::class, 'customers'])->name('admin.customers');
     Route::get('/admin/customers/suspended', [AdminConsultantController::class, 'customersSuspended'])->name('admin.customers.suspended');
     Route::post('/admin/customers/{id}/suspend', [AdminConsultantController::class, 'suspendCustomer'])->name('admin.customers.suspend');
     Route::post('/admin/customers/{id}/unsuspend', [AdminConsultantController::class, 'unsuspendCustomer'])->name('admin.customers.unsuspend');
     Route::get('/admin/customers/{id}', function ($id) {
-        $customer = \App\Models\User::where('role', 'Customer')->findOrFail($id);
+        $customer = \App\Models\User::where('role', 'Customer')
+            ->with(['subscriptions' => function($q) {
+                $q->orderByDesc('created_at')->limit(1);
+            }])
+            ->findOrFail($id);
         return view('admin-folder.customer-profile', compact('customer'));
     })->name('admin.customers.show');
     
@@ -396,4 +491,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/admin/settings', function() {
         return view('admin-folder.settings');
     })->name('admin.settings');
+    
+    // Payment approvals
+    Route::get('/admin/payments', [\App\Http\Controllers\AdminSubscriptionController::class, 'index'])->name('admin.payments');
+    Route::post('/admin/payments/{id}/approve', [\App\Http\Controllers\AdminSubscriptionController::class, 'approve'])->name('admin.payments.approve');
+    Route::post('/admin/payments/{id}/reject', [\App\Http\Controllers\AdminSubscriptionController::class, 'reject'])->name('admin.payments.reject');
 });

@@ -81,7 +81,8 @@
                         <input name="preferred_date" type="date"
                                class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                value="{{ old('preferred_date', $consultation->preferred_date ? \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d') : '') }}"
-                               min="{{ date('Y-m-d') }}" />
+                               min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}" />
+                        <p class="text-xs text-gray-500 mt-1">Minimum date is tomorrow (24 hours from now)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time</label>

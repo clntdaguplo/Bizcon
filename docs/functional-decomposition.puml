@@ -1,0 +1,44 @@
+@startmindmap
+* BizConsult
+** Account & Access
+*** Sign up / Log in / Log out
+*** Role selection (Customer / Consultant / Admin)
+*** Profile management (Customer, Consultant)
+** Public Discovery
+*** Public site (home/services/about)
+*** Public consultants directory & search
+** Customer Functions
+*** Browse consultants & view ratings
+*** Request consultation (≥24h lead time)
+*** Manage consultations (view/edit/cancel/respond to proposal)
+*** View/download reports
+*** Rate consultant
+*** Messaging per consultation
+*** View notifications
+** Consultant Functions
+*** Profile creation/update (resume, expertise, etc.)
+*** Consultation inbox (view/accept/reject/propose/complete)
+*** Scheduling & meeting link generation
+*** Create/save/view consultation report
+*** Rate customer (if enabled)
+*** Messaging per consultation
+*** View notifications
+** Admin Functions
+*** Manage users (view/suspend customers)
+*** Manage consultants (approve/reject/suspend/unsuspend; approve updates)
+*** Manage consultations (search/filter/list; view details)
+*** Reports (view/export PDF/Excel/CSV)
+*** View ratings (consultant→customer, customer→consultant via profiles)
+*** Notifications (follow links)
+** Ratings & Feedback
+*** Customer→Consultant ratings
+*** Consultant→Customer ratings (admin viewable)
+** Messaging
+*** Consultation messages (customer–consultant)
+** Notifications
+*** Consultation and system notifications
+** Reporting & Exports
+*** Admin reports dashboard
+*** Exports (PDF, Excel, CSV)
+@endmindmap
+

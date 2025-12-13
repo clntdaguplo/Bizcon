@@ -10,102 +10,110 @@
 <body class="bg-gray-100 text-gray-900">
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <div class="w-64 bg-gray-900 text-white flex flex-col">
+        <div class="w-64 bg-gray-900 text-white flex flex-col overflow-hidden">
             <!-- Logo -->
-            <div class="p-6 border-b border-gray-700">
-                <a href="{{ route('dashboard.admin') }}" class="flex items-center">
-                    <img src="{{ asset('images/Bizcon.png') }}" alt="Biz Consult Logo" class="h-10 w-auto">
-                    <span class="ml-3 text-xl font-bold">Admin Panel</span>
+            <div class="p-4 border-b border-gray-700">
+                <a href="{{ route('dashboard.admin') }}" class="flex items-center min-w-0">
+                    <img src="{{ asset('images/Bizcon.png') }}" alt="Biz Consult Logo" class="h-8 w-auto flex-shrink-0">
+                    <span class="ml-2 text-sm font-bold whitespace-nowrap truncate">Admin Panel</span>
                 </a>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex-1 p-4 space-y-2">
+            <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
                 <a href="{{ route('dashboard.admin') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('dashboard.admin') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('dashboard.admin') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"></path>
                     </svg>
-                    Dashboard
+                    <span class="truncate">Dashboard</span>
                 </a>
 
                 <a href="{{ route('admin.manage-users') }}" 
-                   class="flex items-center justify-between px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.manage-users') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.manage-users') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <div class="flex items-center min-w-0 flex-1">
+                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                         </svg>
-                        Manage Users
+                        <span class="truncate">Manage Users</span>
                     </div>
                     @php
                         $pendingUpdatesCount = \App\Models\ConsultantProfile::where('has_pending_update', true)->count();
                     @endphp
                     @if($pendingUpdatesCount > 0)
-                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                        <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full flex-shrink-0 ml-2">
                             {{ $pendingUpdatesCount }}
                         </span>
                     @endif
                 </a>
 
                 <a href="{{ route('admin.consultations') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.consultations') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.consultations') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    Consultations
+                    <span class="truncate">Consultations</span>
                 </a>
 
                 <a href="{{ route('admin.reports') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.reports') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.reports') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
-                   Generate Reports
+                    <span class="truncate">Generate Reports</span>
                 </a>
 
                 <a href="{{ route('admin.settings') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.settings') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.settings') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
-                    Settings
+                    <span class="truncate">Settings</span>
                 </a>
 
                 <a href="{{ route('admin.consultants') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.consultants') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.consultants') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    All Consultants
+                    <span class="truncate">All Consultants</span>
                 </a>
 
                 <a href="{{ route('admin.customers') }}" 
-                   class="flex items-center px-4 py-3 rounded-lg transition-colors {{ request()->routeIs('admin.customers') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.customers') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
-                    All Customers
+                    <span class="truncate">All Customers</span>
+                </a>
+
+                <a href="{{ route('admin.payments') }}" 
+                   class="flex items-center px-3 py-2 rounded-lg transition-colors text-sm {{ request()->routeIs('admin.payments') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white' }}">
+                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span class="truncate">Payments</span>
                 </a>
             </nav>
 
             <!-- User Info & Logout -->
-            <div class="p-4 border-t border-gray-700">
-                <div class="flex items-center mb-3">
-                    <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium">{{ substr(Auth::user()->name, 0, 1) }}</span>
+            <div class="p-3 border-t border-gray-700 mt-auto">
+                <div class="flex items-center mb-2">
+                    <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-xs font-medium">{{ substr(Auth::user()->name, 0, 1) }}</span>
                     </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium">{{ Auth::user()->name }}</p>
-                        <p class="text-xs text-gray-400">Administrator</p>
+                    <div class="ml-2 min-w-0 flex-1 overflow-hidden">
+                        <p class="text-xs font-medium truncate">{{ Auth::user()->name }}</p>
+                        <p class="text-xs text-gray-400 truncate">Administrator</p>
                     </div>
                 </div>
-                <a href="{{ route('logout') }}" class="flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{{ route('logout') }}" class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors w-full">
+                    <svg class="w-3.5 h-3.5 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
-                    Logout
+                    <span class="truncate">Logout</span>
                 </a>
             </div>
         </div>

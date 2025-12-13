@@ -6,11 +6,13 @@ use App\Models\Consultation;
 use App\Models\ConsultantProfile;
 use App\Models\ConsultationNotification;
 use App\Models\ConsultationRating;
+use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Carbon\Carbon;
 
 class ConsultationController extends Controller
 {
@@ -20,13 +22,65 @@ class ConsultationController extends Controller
             'consultant_id' => 'required|exists:consultant_profiles,id',
             'topic' => 'required|string|max:255',
             'details' => 'nullable|string',
-            'preferred_date' => 'required|date|after_or_equal:today',
+            'preferred_date' => 'required|date|after:today',
             'preferred_time' => 'required',
         ], [
             'preferred_date.required' => 'Please select a preferred date for the consultation.',
-            'preferred_date.after_or_equal' => 'The preferred date must be today or a future date.',
+            'preferred_date.after' => 'The preferred date must be at least 24 hours from now (tomorrow or later).',
             'preferred_time.required' => 'Please select a preferred time for the consultation.',
         ]);
+
+        // Subscription gating: block if no plan, trial expired/used, or pro pending/rejected/expired
+        $activeSubscription = null;
+        if (Schema::hasTable('subscriptions')) {
+            $activeSubscription = Subscription::where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->first();
+
+            if (!$activeSubscription) {
+                return back()
+                    ->withErrors(['error' => 'Please choose a plan (Free Trial or Subscription) to book consultations.'])
+                    ->withInput();
+            }
+
+            // Block if pro payment was rejected
+            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->payment_status === 'rejected') {
+                return back()
+                    ->withErrors(['error' => 'Your payment was rejected. Please submit a new payment to continue.'])
+                    ->withInput();
+            }
+
+            // Block if pro payment is still pending
+            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->payment_status === 'pending') {
+                return back()
+                    ->withErrors(['error' => 'Your subscription payment is pending. Please wait for approval to book consultations.'])
+                    ->withInput();
+            }
+
+            // Block if pro subscription expired
+            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->expires_at && now()->greaterThanOrEqualTo($activeSubscription->expires_at)) {
+                $activeSubscription->status = 'expired';
+                $activeSubscription->save();
+                return back()
+                    ->withErrors(['error' => 'Your subscription has expired. Please renew to continue booking consultations.'])
+                    ->withInput();
+            }
+
+            // Free trial checks
+            if ($activeSubscription->plan_type === 'free_trial') {
+                $expired = ($activeSubscription->expires_at && now()->greaterThanOrEqualTo($activeSubscription->expires_at))
+                    || ($activeSubscription->minutes_total ?? 0) <= ($activeSubscription->minutes_used ?? 0);
+                if ($expired) {
+                    $activeSubscription->status = 'expired';
+                    $activeSubscription->minutes_used = $activeSubscription->minutes_total ?? 20;
+                    $activeSubscription->save();
+
+                    return back()
+                        ->withErrors(['error' => 'Your free trial has been used. Upgrade to Pro to book another consultation.'])
+                        ->withInput();
+                }
+            }
+        }
 
         $consultation = Consultation::create([
             'customer_id' => Auth::id(),
@@ -38,14 +92,23 @@ class ConsultationController extends Controller
             'status' => 'Pending',
         ]);
 
-        // Booking request is separate from messaging system
-        // Messages can be sent independently through the chat interface after booking is created
+        // Consume free trial on booking
+        if ($activeSubscription && $activeSubscription->plan_type === 'free_trial') {
+            $activeSubscription->minutes_used = $activeSubscription->minutes_total ?? 20;
+            $activeSubscription->status = 'expired';
+            $activeSubscription->save();
+        }
 
         // Notify consultant about new consultation request
         $consultantProfile = ConsultantProfile::find((int) $validated['consultant_id']);
         if ($consultantProfile && $consultantProfile->user_id) {
             $preferredDateText = \Carbon\Carbon::parse($validated['preferred_date'])->format('M j, Y');
             $preferredTimeText = \Carbon\Carbon::parse($validated['preferred_time'])->format('g:i A');
+            
+            $trialNote = '';
+            if ($activeSubscription && $activeSubscription->plan_type === 'free_trial') {
+                $trialNote = "\n\nNote: Free trial valid only 20 minutes.";
+            }
             
             $this->createNotification(
                 $consultation,
@@ -55,7 +118,8 @@ class ConsultationController extends Controller
                 "You have received a new consultation request for '{$validated['topic']}'.\n\n" .
                 "Preferred Date: {$preferredDateText}\n" .
                 "Preferred Time: {$preferredTimeText}\n\n" .
-                ($validated['details'] ? "Details: " . \Illuminate\Support\Str::limit($validated['details'], 200) : '')
+                ($validated['details'] ? "Details: " . \Illuminate\Support\Str::limit($validated['details'], 200) : '') .
+                $trialNote
             );
         }
 
@@ -457,8 +521,10 @@ class ConsultationController extends Controller
         $validated = $request->validate([
             'topic' => 'required|string|max:255',
             'details' => 'nullable|string',
-            'preferred_date' => 'nullable|date|after_or_equal:today',
+            'preferred_date' => 'nullable|date|after:today',
             'preferred_time' => 'nullable',
+        ], [
+            'preferred_date.after' => 'The preferred date must be at least 24 hours from now (tomorrow or later).',
         ]);
 
         // Update consultation fields
@@ -778,6 +844,14 @@ class ConsultationController extends Controller
         
         $consultation = $query->findOrFail($id);
 
+        // Identify customer's latest subscription (for free trial note)
+        $customerSubscription = null;
+        if (Schema::hasTable('subscriptions')) {
+            $customerSubscription = Subscription::where('user_id', $consultation->customer_id)
+                ->orderByDesc('created_at')
+                ->first();
+        }
+
         // If this request is already past its preferred date, mark as expired and block actions
         $consultation->markExpiredIfPastPreferredDate();
         if ($consultation->status === 'Expired') {
@@ -785,7 +859,7 @@ class ConsultationController extends Controller
                 ->withErrors(['error' => 'This consultation request has expired and can no longer be accepted.']);
         }
 
-        return view('consultant-folder.open-request', compact('consultation'));
+        return view('consultant-folder.open-request', compact('consultation', 'customerSubscription'));
     }
 
     /**

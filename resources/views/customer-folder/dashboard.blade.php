@@ -32,6 +32,66 @@
                 </div>
             </div>
 
+            <!-- Subscription Status -->
+            @if(isset($subscription) && $subscription)
+                <div class="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-3">Current Plan</h3>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-gray-900">
+                                {{ $subscription->plan_type === 'pro' ? 'Subscriber' : 'Plan: ' . ucfirst(str_replace('_', ' ', $subscription->plan_type)) }}
+                            </p>
+                            <p class="text-sm text-gray-600 mt-1">
+                                Status: {{ ucfirst($subscription->status) }}
+                                @php
+                                    $statusText = str_replace('_', ' ', $subscription->payment_status);
+                                @endphp
+                                <span class="ml-2 text-xs px-2 py-1 rounded {{ match($subscription->payment_status) {
+                                    'approved', 'not_required' => 'bg-green-100 text-green-800',
+                                    'pending' => 'bg-yellow-100 text-yellow-800',
+                                    'rejected' => 'bg-red-100 text-red-800',
+                                    default => 'bg-gray-100 text-gray-800'
+                                } }}">
+                                    {{ ucfirst($statusText) }}
+                                </span>
+                            </p>
+                            @if($subscription->plan_type === 'pro' && $subscription->days_remaining !== null)
+                                @php
+                                    $days = $subscription->days_remaining;
+                                    $badgeColor = match(true) {
+                                        $days <= 0 => 'bg-red-100 text-red-800',
+                                        $days <= 3 => 'bg-yellow-100 text-yellow-800',
+                                        $days <= 7 => 'bg-green-100 text-green-800',
+                                        default => 'bg-blue-100 text-blue-800'
+                                    };
+                                @endphp
+                                <p class="text-sm text-gray-600 mt-2">
+                                    Days remaining: 
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold {{ $badgeColor }}">
+                                        {{ $days }}
+                                    </span>
+                                </p>
+                            @endif
+                        </div>
+                        <a href="{{ route('customer.plans') }}" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+                            Manage Plans
+                        </a>
+                    </div>
+                </div>
+            @else
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-yellow-900 mb-1">No Active Plan</h3>
+                            <p class="text-sm text-yellow-700">Choose a plan to start booking consultations.</p>
+                        </div>
+                        <a href="{{ route('customer.plans') }}" class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm">
+                            Choose Plan
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <!-- Main Widgets -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 shadow-sm">

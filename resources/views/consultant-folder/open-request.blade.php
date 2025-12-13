@@ -55,6 +55,9 @@
                     <div>
                         <h3 class="text-xl font-bold text-gray-900">Booking Request</h3>
                         <p class="text-sm text-gray-600">Customer consultation booking details</p>
+                        @if(isset($customerSubscription) && $customerSubscription && $customerSubscription->plan_type === 'free_trial')
+                            <p class="text-xs font-semibold text-red-600 mt-1">Note: Free trial valid only 20 minutes.</p>
+                        @endif
                     </div>
                 </div>
                 

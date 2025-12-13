@@ -48,4 +48,9 @@ class User extends Authenticatable
         'is_suspended' => 'boolean',
         'password' => 'hashed',
     ];
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
 }
