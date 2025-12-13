@@ -138,6 +138,9 @@ class AdminConsultantController extends Controller
             ->when($dateFilter === 'year', function($q) {
                 $q->where('created_at', '>=', now()->startOfYear());
             })
+            ->with(['subscriptions' => function($q) {
+                $q->orderByDesc('created_at')->limit(1);
+            }])
             ->orderByDesc('created_at')
             ->paginate(15)
             ->appends($request->query());

@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+
+entity users {
+  * id : BIGINT
+  --
+  name : string
+  email : string
+  password : string
+  role : enum(Customer,Consultant,Admin)
+  is_suspended : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultant_profiles {
+  * id : BIGINT
+  --
+  user_id : BIGINT <<FK users.id>>
+  full_name : string
+  expertise : text
+  avatar_path : string
+  resume_path : string
+  address : string
+  age : int
+  sex : string
+  is_verified : bool
+  is_rejected : bool
+  has_pending_update : bool
+  update_requested_at : datetime
+  suspended_until : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultations {
+  * id : BIGINT
+  --
+  customer_id : BIGINT <<FK users.id>>
+  consultant_profile_id : BIGINT <<FK consultant_profiles.id>>
+  topic : string
+  details : text
+  preferred_date : date
+  preferred_time : time
+  scheduled_date : date
+  scheduled_time : time
+  status : enum(Pending,Accepted,Rejected,Completed,Expired,Proposed)
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultation_messages {
+  * id : BIGINT
+  --
+  consultation_id : BIGINT <<FK consultations.id>>
+  sender_id : BIGINT <<FK users.id>>
+  message : text
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultation_ratings {
+  * id : BIGINT
+  --
+  consultation_id : BIGINT <<FK consultations.id>>
+  rater_id : BIGINT <<FK users.id>>
+  rater_type : enum(customer,consultant)
+  rating : int
+  comment : text
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultation_notifications {
+  * id : BIGINT
+  --
+  consultation_id : BIGINT <<nullable, FK consultations.id>>
+  user_id : BIGINT <<FK users.id>>
+  type : string
+  title : string
+  message : text
+  is_read : bool
+  sent_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity consultant_suspension_history {
+  * id : BIGINT
+  --
+  consultant_profile_id : BIGINT <<FK consultant_profiles.id>>
+  admin_id : BIGINT <<nullable, FK users.id>>
+  action : enum(suspended,unsuspended)
+  reason : text
+  duration : string
+  suspended_until : datetime
+  action_date : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' Relationships
+users ||--|| consultant_profiles : has profile
+users ||--o{ consultations : as customer
+consultant_profiles ||--o{ consultations : as consultant
+
+consultations ||--o{ consultation_messages
+users ||--o{ consultation_messages : as sender
+
+consultations ||--o{ consultation_ratings
+users ||--o{ consultation_ratings : as rater
+
+consultations ||--o{ consultation_notifications : about
+users ||--o{ consultation_notifications : recipient
+
+consultant_profiles ||--o{ consultant_suspension_history
+users ||--o{ consultant_suspension_history : as admin (optional)
+
+@enduml
+

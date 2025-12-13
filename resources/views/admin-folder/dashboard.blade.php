@@ -72,71 +72,75 @@
 
     <!-- Active Users Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Recent Consultants -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Recent Consultants</h3>
-                <p class="text-sm text-gray-600">Latest consultant registrations</p>
-            </div>
-            <div class="p-6">
-                @forelse($consultants->take(5) as $consultant)
-                    <div class="flex items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center @if($consultant->is_rejected) ring-2 ring-red-500 @endif">
-                            <span class="text-sm font-medium text-blue-600">{{ substr($consultant->user->name, 0, 1) }}</span>
-                        </div>
-                        <div class="ml-4 flex-1">
-                            <p class="text-sm font-medium text-gray-900">{{ $consultant->user->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $consultant->expertise ?? 'No expertise set' }}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Verified
-                            </span>
-                            <p class="text-xs text-gray-500 mt-1">{{ $consultant->created_at->diffForHumans() }}</p>
-                        </div>
-                    </div>
-                @empty
-                    <div class="text-center py-8">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        <p class="text-gray-500">No consultants yet</p>
-                    </div>
-                @endforelse
-            </div>
-        </div>
 
-        <!-- Recent Customers -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Recent Customers</h3>
-                <p class="text-sm text-gray-600">Latest customer registrations</p>
+        <!-- Right Column: Recent Consultants and Customers -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Consultants -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Recent Consultants</h3>
+                    <p class="text-sm text-gray-600">Latest consultant registrations</p>
+                </div>
+                <div class="p-6">
+                    @forelse($consultants->take(5) as $consultant)
+                        <div class="flex items-center py-3 border-b border-gray-100 last:border-b-0">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 @if($consultant->is_rejected) ring-2 ring-red-500 @endif">
+                                <span class="text-sm font-medium text-blue-600">{{ substr($consultant->full_name ?? $consultant->user->name ?? 'C', 0, 1) }}</span>
+                            </div>
+                            <div class="ml-4 flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ $consultant->full_name ?? $consultant->user->name ?? 'Unknown' }}</p>
+                                <p class="text-xs text-gray-500 truncate">{{ $consultant->expertise ?? 'No expertise set' }}</p>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Verified
+                                </span>
+                                <p class="text-xs text-gray-500 mt-1 whitespace-nowrap">{{ $consultant->updated_at->diffForHumans() }}</p>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <p class="text-gray-500">No consultants yet</p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
-            <div class="p-6">
-                @forelse($customers->take(5) as $customer)
-                    <div class="flex items-center py-3 border-b border-gray-100 last:border-b-0">
-                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                            <span class="text-sm font-medium text-green-600">{{ substr($customer->name, 0, 1) }}</span>
+
+            <!-- Recent Customers -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Recent Customers</h3>
+                    <p class="text-sm text-gray-600">Latest customer registrations</p>
+                </div>
+                <div class="p-6">
+                    @forelse($customers->take(5) as $customer)
+                        <div class="flex items-center py-3 border-b border-gray-100 last:border-b-0">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-green-600">{{ substr($customer->name, 0, 1) }}</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <p class="text-sm font-medium text-gray-900">{{ $customer->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $customer->email }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Active
+                                </span>
+                                <p class="text-xs text-gray-500 mt-1">{{ $customer->created_at->diffForHumans() }}</p>
+                            </div>
                         </div>
-                        <div class="ml-4 flex-1">
-                            <p class="text-sm font-medium text-gray-900">{{ $customer->name }}</p>
-                            <p class="text-xs text-gray-500">{{ $customer->email }}</p>
+                    @empty
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <p class="text-gray-500">No customers yet</p>
                         </div>
-                        <div class="text-right">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                Active
-                            </span>
-                            <p class="text-xs text-gray-500 mt-1">{{ $customer->created_at->diffForHumans() }}</p>
-                        </div>
-                    </div>
-                @empty
-                    <div class="text-center py-8">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <p class="text-gray-500">No customers yet</p>
-                    </div>
-                @endforelse
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>

@@ -57,12 +57,21 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Get current subscription
+        $subscription = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('subscriptions')) {
+            $subscription = \App\Models\Subscription::where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->first();
+        }
+
         return view('customer-folder.dashboard', compact(
             'featuredConsultants', 
             'totalVerifiedConsultants',
             'activeBookings',
             'completedSessions',
-            'completedConsultations'
+            'completedConsultations',
+            'subscription'
         ));
     }
 

@@ -136,12 +136,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date <span class="text-red-500">*</span></label>
-                        <input name="preferred_date" id="preferred_date" type="date" min="{{ date('Y-m-d') }}"
+                        <input name="preferred_date" id="preferred_date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}"
                                class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('preferred_date') border-red-500 @enderror"
                                required />
                         @error('preferred_date')
                             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
                         @enderror
+                        <p class="text-xs text-gray-500 mt-1">Minimum date is tomorrow (24 hours from now)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time <span class="text-red-500">*</span></label>
