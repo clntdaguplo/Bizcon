@@ -19,33 +19,14 @@ class SubscriptionController extends Controller
             return back()->with('error', 'Subscriptions table not found. Please run migrations.');
         }
 
-        $current = Subscription::where('user_id', $user->id)->latest()->first();
+        $current = $user->activeSubscription();
 
-        // Auto-expire free trial if countdown finished
-        if ($current && $current->plan_type === 'free_trial' && $current->expires_at && now()->greaterThanOrEqualTo($current->expires_at)) {
-            $current->status = 'expired';
-            $current->minutes_used = $current->minutes_total ?? 20;
-            $current->save();
-        }
-
-        // Auto-expire Pro subscription if 30 days passed
-        if ($current && $current->plan_type === 'pro' && $current->expires_at && now()->greaterThanOrEqualTo($current->expires_at)) {
-            $current->status = 'expired';
-            $current->save();
-        }
-
-        // Backfill expires_at for Pro subscriptions missing it
-        if ($current && $current->plan_type === 'pro' && $current->approved_at && !$current->expires_at) {
-            $current->expires_at = $current->approved_at->copy()->addDays(30);
-            $current->save();
-        }
-
-        $hasTrial = Subscription::where('user_id', $user->id)->where('plan_type', 'free_trial')->exists();
+        $hasFree = Subscription::where('user_id', $user->id)->where('plan_type', 'Free')->exists();
         $history = Subscription::where('user_id', $user->id)->orderByDesc('created_at')->get();
 
         return view('customer-folder.plans', [
             'current' => $current,
-            'trialAvailable' => !$hasTrial,
+            'isFreeAvailable' => !$hasFree,
             'history' => $history,
         ]);
     }
@@ -58,34 +39,34 @@ class SubscriptionController extends Controller
         }
 
         $request->validate([
-            'plan_type' => 'required|in:free_trial,pro',
+            'plan_type' => 'required|in:Free,Weekly,Quarterly,Annual',
         ]);
 
-        if ($request->plan_type === 'free_trial') {
-            $existingTrial = Subscription::where('user_id', $user->id)
-                ->where('plan_type', 'free_trial')
+        if ($request->plan_type === 'Free') {
+            $existingFree = Subscription::where('user_id', $user->id)
+                ->where('plan_type', 'Free')
                 ->first();
 
-            if ($existingTrial) {
-                return back()->withErrors(['plan_type' => 'Free Trial already used on this account.']);
+            if ($existingFree) {
+                return back()->withErrors(['plan_type' => 'Free plan already activated on this account.']);
             }
 
             Subscription::create([
                 'user_id' => $user->id,
-                'plan_type' => 'free_trial',
+                'plan_type' => 'Free',
                 'status' => 'active',
                 'payment_method' => 'n/a',
-                'payment_status' => 'not_required',
-                'minutes_total' => 20,
+                'payment_status' => 'approved', // Free is auto-approved
+                'minutes_total' => 20, // Free trial valid for 20 minutes
                 'minutes_used' => 0,
-                'expires_at' => now()->addMinutes(20),
+                'expires_at' => null, // Never expires or handle as needed
                 'approved_at' => now(),
             ]);
 
-            return redirect()->route('dashboard.customer')->with('success', 'Free Trial activated — enjoy your 20 minutes!');
+            return redirect()->route('dashboard.customer')->with('success', 'Free plan activated — enjoy limited access!');
         }
 
-        // Pro plan flow
+        // Paid plans flow
         $request->validate([
             'payment_method' => 'required|in:gcash,paymaya',
             'proof' => 'required|image|max:4096',
@@ -93,16 +74,27 @@ class SubscriptionController extends Controller
 
         $path = $request->file('proof')->store('payment_proofs', 'public');
 
+        // Determine expiration duration
+        $days = match($request->plan_type) {
+            'Weekly' => 7,
+            'Quarterly' => 90,
+            'Annual' => 365,
+            default => 30
+        };
+
         Subscription::create([
             'user_id' => $user->id,
-            'plan_type' => 'pro',
+            'plan_type' => $request->plan_type,
             'status' => 'pending',
             'payment_method' => $request->payment_method,
             'payment_status' => 'pending',
             'proof_path' => $path,
+            'expires_at' => now()->addDays($days), // This will be finalized on approval in AdminController if needed, or started now
         ]);
 
-        return back()->with('success', 'Payment submitted. Waiting for admin approval.');
+        return back()->with('success', 'Payment submitted for ' . $request->plan_type . ' plan. Waiting for admin approval.');
     }
 }
+
+
 

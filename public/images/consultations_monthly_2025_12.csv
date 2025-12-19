@@ -1,0 +1,6 @@
+﻿ID,Date,Consultant,Customer,Topic,Status,Rating,"Plan Type"
+57,"2025-12-19 12:08",demo,benene,"Business Strategy",Completed,N/A,Weekly
+56,"2025-12-19 12:03","Client Daguplo","ben andre","Technology & IT Support",Completed,N/A,Annual
+55,"2025-12-19 11:01",demo,ANJO,"Startup & Entrepreneurship",Completed,N/A,Quarterly
+54,"2025-12-19 10:39",demo,ANJO,"Business Strategy",Cancelled,N/A,Quarterly
+53,"2025-12-19 10:10","Client Daguplo","Hubert Daanton","Marketing & Branding",Accepted,N/A,Free

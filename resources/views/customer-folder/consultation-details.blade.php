@@ -169,21 +169,17 @@
             
             @php
                 $scheduledDateTime = null;
-                if ($consultation->scheduled_date && $consultation->scheduled_time) {
-                    $dateStr = $consultation->scheduled_date instanceof \Carbon\Carbon 
-                        ? $consultation->scheduled_date->format('Y-m-d') 
-                        : \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
-                    $timeStr = is_string($consultation->scheduled_time) 
-                        ? $consultation->scheduled_time 
-                        : \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
+                if ($consultation->status === 'Proposed' && $consultation->proposed_date && $consultation->proposed_time) {
+                    $dateStr = \Carbon\Carbon::parse($consultation->proposed_date)->format('Y-m-d');
+                    $timeStr = \Carbon\Carbon::parse($consultation->proposed_time)->format('H:i:s');
+                    $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                } elseif ($consultation->scheduled_date && $consultation->scheduled_time) {
+                    $dateStr = \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
+                    $timeStr = \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
                     $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
                 } elseif ($consultation->preferred_date && $consultation->preferred_time) {
-                    $dateStr = $consultation->preferred_date instanceof \Carbon\Carbon 
-                        ? $consultation->preferred_date->format('Y-m-d') 
-                        : \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
-                    $timeStr = is_string($consultation->preferred_time) 
-                        ? $consultation->preferred_time 
-                        : \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
+                    $dateStr = \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
+                    $timeStr = \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
                     $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
                 }
             @endphp
@@ -317,9 +313,14 @@
                 @if($consultation->consultation_summary)
                 <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-3 mt-4">
                     <p class="font-semibold text-purple-900 mb-2">📄 Consultation Report Available</p>
-                    <a href="{{ route('customer.consultations.report', $consultation->id) }}" target="_blank" class="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mt-2">
-                        Download Report
-                    </a>
+                    @if(auth()->user()->hasSubscriptionFeature('report_export'))
+                        <a href="{{ route('customer.consultations.report', $consultation->id) }}" target="_blank" class="inline-block bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 mt-2">
+                            Download Report
+                        </a>
+                    @else
+                        <p class="text-sm text-purple-700 mb-2 italic">Report viewing/exporting is not available in the Free Subscription.</p>
+                        <a href="{{ route('customer.plans') }}" class="text-xs font-bold text-purple-600 hover:text-purple-800 uppercase tracking-widest">Upgrade to View Report →</a>
+                    @endif
                 </div>
                 @endif
                 
@@ -332,9 +333,14 @@
                 @if(!$hasRated)
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
                     <p class="font-semibold text-yellow-900 mb-2">⭐ Rate Your Consultant</p>
-                    <a href="{{ route('customer.consultations.rate', $consultation->id) }}" class="inline-block bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 mt-2">
-                        Submit Rating
-                    </a>
+                    @if(auth()->user()->hasSubscriptionFeature('rating'))
+                        <a href="{{ route('customer.consultations.rate', $consultation->id) }}" class="inline-block bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 mt-2">
+                            Submit Rating
+                        </a>
+                    @else
+                        <p class="text-sm text-yellow-700 mb-2 italic">Rating and feedback features are not available in the Free Subscription.</p>
+                        <a href="{{ route('customer.plans') }}" class="text-xs font-bold text-yellow-600 hover:text-yellow-800 uppercase tracking-widest">Upgrade to Rate Expert →</a>
+                    @endif
                 </div>
                 @else
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
@@ -639,7 +645,7 @@
             // Future consultation - countdown
             label = 'Time Remaining';
             if (days > 0) {
-                timeString = `${days}d ${hours}h ${minutes}m`;
+                timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
             } else if (hours > 0) {
                 timeString = `${hours}h ${minutes}m ${seconds}s`;
             } else if (minutes > 0) {
@@ -652,9 +658,9 @@
             // Past consultation - elapsed time
             label = 'Time Elapsed';
             if (days > 0) {
-                timeString = `${days}d ${hours}h ${minutes}m ago`;
+                timeString = `${days}d ${hours}h ${minutes}m ${seconds}s ago`;
             } else if (hours > 0) {
-                timeString = `${hours}h ${minutes}m ago`;
+                timeString = `${hours}h ${minutes}m ${seconds}s ago`;
             } else if (minutes > 0) {
                 timeString = `${minutes}m ${seconds}s ago`;
             } else {

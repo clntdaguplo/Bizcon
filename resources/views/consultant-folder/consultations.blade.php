@@ -33,6 +33,12 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900 mb-2">My Consultations</h1>
                     <p class="text-gray-600">View and manage all consultation requests assigned to you</p>
+                    <div class="mt-2 flex items-center text-sm font-medium text-blue-600">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Current Time: <span id="header-current-time">{{ now()->format('M j, Y g:i:s A') }}</span></span>
+                    </div>
                 </div>
                 <div class="mt-4 lg:mt-0">
                     <div class="flex items-center space-x-4 text-sm text-gray-600">
@@ -84,11 +90,26 @@
                             <div class="flex items-start justify-between mb-3">
                                 <div>
                                     <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ $consultation->topic }}</h3>
-                                    <p class="text-gray-600 text-sm">From: {{ $consultation->customer->name ?? 'Unknown Customer' }}</p>
+                                    <p class="text-gray-600 text-sm flex items-center gap-2">
+                                        From: {{ $consultation->customer->name ?? 'Unknown Customer' }}
+                                        @php
+                                            $customerTier = \App\Services\SubscriptionService::getTier($consultation->customer);
+                                        @endphp
+                                        @if($customerTier === 'Free')
+                                            <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200 uppercase tracking-wider">Free Trial</span>
+                                        @elseif($customerTier === 'Weekly')
+                                            <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full border border-blue-200 uppercase tracking-wider">Weekly</span>
+                                        @elseif($customerTier === 'Quarterly')
+                                            <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase tracking-wider">Quarterly</span>
+                                        @elseif($customerTier === 'Annual')
+                                            <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200 uppercase tracking-wider shadow-sm">Annual</span>
+                                        @endif
+                                    </p>
                                 </div>
                                 <span class="px-3 py-1 text-xs font-medium rounded-full
                                     @if($consultation->status === 'Pending') bg-yellow-100 text-yellow-800
                                     @elseif($consultation->status === 'Accepted') bg-green-100 text-green-800
+                                    @elseif($consultation->status === 'Proposed') bg-purple-100 text-purple-800
                                     @elseif($consultation->status === 'Completed') bg-blue-100 text-blue-800
                                     @elseif($consultation->status === 'Rejected') bg-red-100 text-red-800
                                     @else bg-gray-100 text-gray-800 @endif">
@@ -131,7 +152,7 @@
                                     <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                    <span>Requested: {{ $consultation->created_at->format('M j, Y g:i A') }}</span>
+                                    <span>Requested: {{ $consultation->created_at->diffForHumans() }}</span>
                                 </div>
                             </div>
                             
@@ -191,7 +212,7 @@
                         </div>
                         
                         <div class="mt-4 lg:mt-0 lg:ml-6 flex flex-col space-y-2">
-                            @if($consultation->status === 'Pending' || $consultation->status === 'Accepted')
+                            @if($consultation->status === 'Pending' || $consultation->status === 'Accepted' || $consultation->status === 'Proposed')
                                 <a href="{{ route('consultant.consultations.open', $consultation->id) }}" 
                                    class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                                     Open Request
@@ -266,8 +287,12 @@
             btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
             btn.classList.add('text-gray-600', 'hover:bg-white');
         });
-        event.target.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
-        event.target.classList.remove('text-gray-600', 'hover:bg-white');
+        
+        // Handle clicking the button
+        if (event && event.target) {
+            event.target.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+            event.target.classList.remove('text-gray-600', 'hover:bg-white');
+        }
         
         // Filter consultation items
         const items = document.querySelectorAll('.consultation-item');
@@ -297,6 +322,96 @@
         }
     });
 
-    // viewConsultationDetails removed — Open Request now navigates to the request response page
+    // Live clock for consultations list
+    function updateClocks() {
+        // Update header clock
+        const headerTime = document.getElementById('header-current-time');
+        if (headerTime) {
+            const now = new Date();
+            headerTime.textContent = now.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric',
+                hour: 'numeric', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true 
+            });
+        }
+
+        // Update individual consultation session clocks
+        const clocks = document.querySelectorAll('[id^="live-clock-"]');
+        clocks.forEach(clock => {
+            const id = clock.id.replace('live-clock-', '');
+            const scheduledTimeInput = document.getElementById('scheduled-time-' + id);
+            if (!scheduledTimeInput) return;
+            
+            const scheduledTimestamp = parseInt(scheduledTimeInput.value);
+            const scheduledTime = new Date(scheduledTimestamp * 1000);
+            const now = new Date();
+            const diff = scheduledTime - now;
+            
+            const clockTextElement = document.getElementById('clock-time-' + id);
+            const labelElement = document.getElementById('clock-label-' + id);
+            
+            if (!clockTextElement) return;
+            
+            const absDiff = Math.abs(diff);
+            const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((absDiff % (1000 * 60)) / 1000);
+            
+            let timeString = '';
+            let label = '';
+            
+            if (diff > 0) {
+                // Future consultation - countdown
+                label = 'Time Remaining';
+                if (days > 0) {
+                    timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                } else if (hours > 0) {
+                    timeString = `${hours}h ${minutes}m ${seconds}s`;
+                } else if (minutes > 0) {
+                    timeString = `${minutes}m ${seconds}s`;
+                } else {
+                    timeString = `${seconds}s`;
+                }
+                clock.parentElement.parentElement.parentElement.classList.remove('from-gray-50', 'to-gray-100');
+                clock.parentElement.parentElement.parentElement.classList.add('from-blue-50', 'to-indigo-50');
+            } else if (diff < 0) {
+                // Past consultation - elapsed time
+                label = 'Time Elapsed';
+                if (days > 0) {
+                    timeString = `${days}d ${hours}h ${minutes}m ${seconds}s ago`;
+                } else if (hours > 0) {
+                    timeString = `${hours}h ${minutes}m ${seconds}s ago`;
+                } else if (minutes > 0) {
+                    timeString = `${minutes}m ${seconds}s ago`;
+                } else {
+                    timeString = `${seconds}s ago`;
+                }
+                clock.parentElement.parentElement.parentElement.classList.remove('from-blue-50', 'to-indigo-50');
+                clock.parentElement.parentElement.parentElement.classList.add('from-gray-50', 'to-gray-100');
+                clock.classList.remove('text-blue-700');
+                clock.classList.add('text-gray-600');
+            } else {
+                // Happening now
+                label = 'Happening Now';
+                timeString = 'NOW';
+                clock.classList.remove('text-blue-700', 'text-gray-600');
+                clock.classList.add('text-green-600');
+            }
+            
+            clockTextElement.textContent = timeString;
+            if (labelElement) {
+                labelElement.textContent = label;
+            }
+        });
+    }
+    
+    // Initial call and then every second
+    updateClocks();
+    setInterval(updateClocks, 1000);
 </script>
 @endsection

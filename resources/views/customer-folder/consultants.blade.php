@@ -105,9 +105,17 @@
 
                         <!-- Action Buttons -->
                         <div class="flex space-x-3">
-                            <a href="{{ route('customer.consultants.request', $c->id) }}" 
-                               class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
-                                Request Consultation                            </a>
+                            @if(Auth::user()->isTrialExhausted())
+                                <button disabled 
+                                   class="flex-1 bg-gray-200 text-gray-400 cursor-not-allowed text-center py-2 px-4 rounded-lg font-semibold border border-gray-300">
+                                    Trial Exhausted
+                                </button>
+                            @else
+                                <a href="{{ route('customer.consultants.request', $c->id) }}" 
+                                   class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+                                    Request Consultation
+                                </a>
+                            @endif
                             <button class="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition duration-300">
                                 View Profile
                             </button>
@@ -218,10 +226,10 @@
                                             </div>
                                         </div>
                                         <div class="flex space-x-3">
-                                            <a href="/customer/consultants/${c.id}/request" 
-                                               class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
-                                                Request Consultation
-                                            </a>
+                                            ${@json(Auth::user()->isTrialExhausted()) 
+                                                ? `<button disabled class="flex-1 bg-gray-200 text-gray-400 cursor-not-allowed text-center py-2 px-4 rounded-lg font-semibold border border-gray-300">Trial Exhausted</button>`
+                                                : `<a href="/customer/consultants/${c.id}/request" class="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">Request Consultation</a>`
+                                            }
                                         </div>
                                     </div>
                                 `;

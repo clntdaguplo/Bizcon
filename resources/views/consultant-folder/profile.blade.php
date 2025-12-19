@@ -267,11 +267,16 @@
                         </label>
                         @php
                             $expertiseOptions = [
+                                'Business Strategy',
+                                'Startup & Entrepreneurship',
+                                'Marketing & Branding',
+                                'Financial & Investment',
                                 'Technology & IT Support',
-                                'E-commerce Business',
-                                'Marketing Business',
-                                'Education & Career Coaching',
-                                'Financial Business',
+                                'Legal Consultation',
+                                'Human Resources (HR) Consultation',
+                                'E-commerce & Online Business',
+                                'Career & Professional Development',
+                                'Healthcare & Wellness',
                             ];
                             $selectedExpertise = old('expertise');
                             if (!is_array($selectedExpertise)) {

@@ -53,4 +53,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(Subscription::class);
     }
+
+    public function activeSubscription()
+    {
+        return \App\Services\SubscriptionService::getActiveSubscription($this);
+    }
+
+    public function getSubscriptionTier()
+    {
+        return \App\Services\SubscriptionService::getTier($this);
+    }
+
+    public function hasSubscriptionFeature($feature)
+    {
+        return \App\Services\SubscriptionService::hasFeature($this, $feature);
+    }
+
+    public function isTrialExhausted()
+    {
+        return \App\Services\SubscriptionService::isFreeTrialExhausted($this);
+    }
 }

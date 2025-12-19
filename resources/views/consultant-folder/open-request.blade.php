@@ -37,7 +37,7 @@
                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                Requested: {{ $consultation->created_at->format('M j, Y g:i A') }}
+                                Requested: {{ $consultation->created_at->diffForHumans() }}
                             </div>
                         </div>
                     </div>
@@ -53,7 +53,21 @@
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-gray-900">Booking Request</h3>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xl font-bold text-gray-900">Booking Request</h3>
+                            @php
+                                $customerTier = \App\Services\SubscriptionService::getTier($consultation->customer);
+                            @endphp
+                            @if($customerTier === 'Free')
+                                <span class="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200 uppercase tracking-wider">Free Trial</span>
+                            @elseif($customerTier === 'Weekly')
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full border border-blue-200 uppercase tracking-wider">Weekly</span>
+                            @elseif($customerTier === 'Quarterly')
+                                <span class="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase tracking-wider">Quarterly</span>
+                            @elseif($customerTier === 'Annual')
+                                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200 uppercase tracking-wider shadow-sm">Annual</span>
+                            @endif
+                        </div>
                         <p class="text-sm text-gray-600">Customer consultation booking details</p>
                         @if(isset($customerSubscription) && $customerSubscription && $customerSubscription->plan_type === 'free_trial')
                             <p class="text-xs font-semibold text-red-600 mt-1">Note: Free trial valid only 20 minutes.</p>
@@ -216,24 +230,20 @@
             </div>
         </div>
 
-            @if($consultation->status === 'Accepted')
+            @if($consultation->status === 'Accepted' || ($consultation->status === 'Proposed' && $consultation->proposed_date))
                 @php
                     $scheduledDateTime = null;
-                    if ($consultation->scheduled_date && $consultation->scheduled_time) {
-                        $dateStr = $consultation->scheduled_date instanceof \Carbon\Carbon 
-                            ? $consultation->scheduled_date->format('Y-m-d') 
-                            : \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
-                        $timeStr = is_string($consultation->scheduled_time) 
-                            ? $consultation->scheduled_time 
-                            : \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
+                    if ($consultation->status === 'Proposed' && $consultation->proposed_date && $consultation->proposed_time) {
+                        $dateStr = \Carbon\Carbon::parse($consultation->proposed_date)->format('Y-m-d');
+                        $timeStr = \Carbon\Carbon::parse($consultation->proposed_time)->format('H:i:s');
+                        $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
+                    } elseif ($consultation->scheduled_date && $consultation->scheduled_time) {
+                        $dateStr = \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
+                        $timeStr = \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
                         $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
                     } elseif ($consultation->preferred_date && $consultation->preferred_time) {
-                        $dateStr = $consultation->preferred_date instanceof \Carbon\Carbon 
-                            ? $consultation->preferred_date->format('Y-m-d') 
-                            : \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
-                        $timeStr = is_string($consultation->preferred_time) 
-                            ? $consultation->preferred_time 
-                            : \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
+                        $dateStr = \Carbon\Carbon::parse($consultation->preferred_date)->format('Y-m-d');
+                        $timeStr = \Carbon\Carbon::parse($consultation->preferred_time)->format('H:i:s');
                         $scheduledDateTime = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
                     }
                 @endphp
@@ -325,7 +335,52 @@
                 </div>
             @endif
 
+            @if($consultation->status === 'Proposed' && $consultation->proposed_date)
+            <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 shadow-sm mb-6">
+                <div class="flex items-start mb-4">
+                    <div class="bg-purple-600 p-2 rounded-lg mr-3 shadow-md">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-lg font-bold text-purple-900 mb-1">Proposal Pending Response</p>
+                        <p class="text-sm text-purple-700">Waiting for the client to accept or decline your suggested time.</p>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg p-4 border border-purple-200">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-xs font-semibold text-gray-600 uppercase">Your Proposed Schedule</span>
+                    </div>
+                    <p class="text-lg font-semibold text-gray-900">
+                        {{ \Carbon\Carbon::parse($consultation->proposed_date)->format('F j, Y') }} 
+                        <span class="text-gray-600">at</span> 
+                        {{ \Carbon\Carbon::parse($consultation->proposed_time)->format('g:i A') }}
+                    </p>
+                </div>
+            </div>
+            @endif
+
             @if(in_array($consultation->status, ['Pending', 'Proposed']))
+                @php
+                    $today = \Carbon\Carbon::today();
+                    $targetDate = null;
+                    if ($consultation->status === 'Accepted') {
+                        $targetDate = $consultation->scheduled_date;
+                    } elseif ($consultation->status === 'Proposed') {
+                        $targetDate = $consultation->proposed_date;
+                    } else {
+                        $targetDate = $consultation->preferred_date;
+                    }
+                    
+                    $isToday = $targetDate ? $today->equalTo(\Carbon\Carbon::parse($targetDate)->startOfDay()) : false;
+                    $isFuture = $targetDate ? \Carbon\Carbon::parse($targetDate)->startOfDay()->isFuture() : false;
+                @endphp
+
                 <form method="POST" action="{{ route('consultant.consultations.respond', $consultation->id) }}" class="space-y-4" id="responseForm">
                     @csrf
 
@@ -458,11 +513,13 @@
                         </div>
                     </div>
 
+
                     <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                         <a href="{{ route('consultant.consultations') }}" class="inline-flex items-center px-5 py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
                             Cancel
                         </a>
-                        <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md hover:shadow-lg font-medium">
+                        <button type="submit" 
+                                class="inline-flex items-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-md hover:shadow-lg font-medium">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                             </svg>
@@ -495,65 +552,68 @@
                                     Once you mark this consultation as <strong>Completed</strong>, you'll be able to:
                                 </p>
                                 <ul class="mt-2 space-y-1.5 text-sm text-gray-600 ml-4">
+                                    @php
+                                        $hasReportExport = $consultation->customer->hasSubscriptionFeature('report_export');
+                                        $hasRating = $consultation->customer->hasSubscriptionFeature('rating');
+                                    @endphp
                                     <li class="flex items-start">
-                                        <span class="text-green-600 mr-2">✓</span>
-                                        <span>Create a detailed consultation report with summary and recommendations</span>
+                                        <span class="{{ $hasReportExport ? 'text-green-600' : 'text-red-600' }} mr-2 font-bold">{{ $hasReportExport ? '✓' : '✕' }}</span>
+                                        <span class="{{ $hasReportExport ? '' : 'text-gray-400' }}">Create a detailed consultation report with summary and recommendations</span>
                                     </li>
                                     <li class="flex items-start">
-                                        <span class="text-green-600 mr-2">✓</span>
-                                        <span>Customer can rate and provide feedback</span>
+                                        <span class="{{ $hasRating ? 'text-green-600' : 'text-red-600' }} mr-2 font-bold">{{ $hasRating ? '✓' : '✕' }}</span>
+                                        <span class="{{ $hasRating ? '' : 'text-gray-400' }}">Allow the customer to rate and provide feedback</span>
                                     </li>
                                     <li class="flex items-start">
-                                        <span class="text-green-600 mr-2">✓</span>
-                                        <span>Generate a PDF report document</span>
+                                        <span class="{{ $hasReportExport ? 'text-green-600' : 'text-red-600' }} mr-2 font-bold">{{ $hasReportExport ? '✓' : '✕' }}</span>
+                                        <span class="{{ $hasReportExport ? '' : 'text-gray-400' }}">Generate a PDF report document</span>
                                     </li>
                                 </ul>
+                                @if(!$hasReportExport)
+                                    <div class="mt-3 bg-red-50 border border-red-100 rounded-lg p-3">
+                                        <p class="text-xs text-red-700">
+                                            ⚠️ <strong>Restrictions Applied:</strong> Full reports and PDF generation are disabled for Free Trial users. The user must upgrade to a paid plan to unlock these features.
+                                        </p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                         
                         @if($consultation->scheduled_date)
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        @php
+                            $scheduledToday = \Carbon\Carbon::parse($consultation->scheduled_date)->isToday();
+                            $scheduledFuture = \Carbon\Carbon::parse($consultation->scheduled_date)->isFuture();
+                        @endphp
+                        <div class="@if($scheduledToday) bg-green-50 border-green-200 @else bg-blue-50 border-blue-200 @endif border rounded-lg p-4">
                             <div class="flex items-center mb-2">
-                                <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 @if($scheduledToday) text-green-600 @else text-blue-600 @endif mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                <span class="text-sm font-semibold text-blue-900">Scheduled Session</span>
+                                <span class="text-sm font-semibold @if($scheduledToday) text-green-900 @else text-blue-900 @endif">Scheduled Session</span>
                             </div>
-                            <p class="text-sm text-blue-800">
+                            <p class="text-sm @if($scheduledToday) text-green-800 @else text-blue-800 @endif">
                                 {{ \Carbon\Carbon::parse($consultation->scheduled_date)->format('F j, Y') }}
                                 @if($consultation->scheduled_time)
                                     at {{ \Carbon\Carbon::parse($consultation->scheduled_time)->format('g:i A') }}
                                 @endif
                             </p>
-                            @php
-                                $scheduledDateForCheck = $consultation->scheduled_date instanceof \Carbon\Carbon 
-                                    ? $consultation->scheduled_date 
-                                    : \Carbon\Carbon::parse($consultation->scheduled_date);
-                                $scheduledDateTimeForCheck = null;
-                                if ($consultation->scheduled_date && $consultation->scheduled_time) {
-                                    $dateStr = $consultation->scheduled_date instanceof \Carbon\Carbon 
-                                        ? $consultation->scheduled_date->format('Y-m-d') 
-                                        : \Carbon\Carbon::parse($consultation->scheduled_date)->format('Y-m-d');
-                                    $timeStr = is_string($consultation->scheduled_time) 
-                                        ? $consultation->scheduled_time 
-                                        : \Carbon\Carbon::parse($consultation->scheduled_time)->format('H:i:s');
-                                    $scheduledDateTimeForCheck = \Carbon\Carbon::parse($dateStr . ' ' . $timeStr);
-                                }
-                            @endphp
-                            @if($scheduledDateForCheck->isPast() && 
-                                (!$consultation->scheduled_time || ($scheduledDateTimeForCheck && $scheduledDateTimeForCheck->isPast())))
-                                <p class="text-xs text-green-700 font-medium mt-2">✓ Session date has passed - Ready to mark as completed</p>
-                            @else
+                            
+                            @if($scheduledToday)
+                                <p class="text-xs text-green-700 font-medium mt-2">✓ Today is the session date - Ready to mark as completed</p>
+                            @elseif($scheduledFuture)
                                 <p class="text-xs text-orange-700 font-medium mt-2">⏰ Session is scheduled for a future date</p>
+                            @else
+                                <p class="text-xs text-gray-700 font-medium mt-2">✓ Session date has passed</p>
                             @endif
                         </div>
                         @endif
                         
                         <form method="POST" action="{{ route('consultant.consultations.complete', $consultation->id) }}" 
-                              onsubmit="return confirm('Are you sure you want to mark this consultation as completed? After completion, you can create a detailed report.');">
+                               onsubmit="return confirm('Are you sure you want to mark this consultation as completed? After completion, you can create a detailed report.');">
                             @csrf
                             <button type="submit" 
-                                    class="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg hover:shadow-xl font-semibold">
+                                    @if(!$scheduledToday) disabled @endif
+                                    class="w-full inline-flex items-center justify-center px-6 py-3 @if($scheduledToday) bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl @else bg-gray-400 cursor-not-allowed @endif text-white rounded-lg transition font-semibold">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
@@ -809,7 +869,7 @@
             // Future consultation - countdown
             label = 'Time Remaining';
             if (days > 0) {
-                timeString = `${days}d ${hours}h ${minutes}m`;
+                timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
             } else if (hours > 0) {
                 timeString = `${hours}h ${minutes}m ${seconds}s`;
             } else if (minutes > 0) {
@@ -822,9 +882,9 @@
             // Past consultation - elapsed time
             label = 'Time Elapsed';
             if (days > 0) {
-                timeString = `${days}d ${hours}h ${minutes}m ago`;
+                timeString = `${days}d ${hours}h ${minutes}m ${seconds}s ago`;
             } else if (hours > 0) {
-                timeString = `${hours}h ${minutes}m ago`;
+                timeString = `${hours}h ${minutes}m ${seconds}s ago`;
             } else if (minutes > 0) {
                 timeString = `${minutes}m ${seconds}s ago`;
             } else {

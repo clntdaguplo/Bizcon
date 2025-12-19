@@ -40,12 +40,24 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                         </svg>
                                         <span>From: {{ $consultation->customer->name ?? 'Unknown Customer' }}</span>
+                                        @php
+                                            $customerTier = \App\Services\SubscriptionService::getTier($consultation->customer);
+                                        @endphp
+                                        @if($customerTier === 'Free')
+                                            <span class="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full border border-red-200 uppercase tracking-wider">Free Trial</span>
+                                        @elseif($customerTier === 'Weekly')
+                                            <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full border border-blue-200 uppercase tracking-wider">Weekly</span>
+                                        @elseif($customerTier === 'Quarterly')
+                                            <span class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded-full border border-purple-200 uppercase tracking-wider">Quarterly</span>
+                                        @elseif($customerTier === 'Annual')
+                                            <span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200 uppercase tracking-wider shadow-sm">Annual</span>
+                                        @endif
                                     </div>
                                     <div class="flex items-center text-sm text-gray-600">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
-                                        <span>Requested: {{ $consultation->created_at->format('M j, Y g:i A') }}</span>
+                                        <span>Requested: {{ $consultation->created_at->diffForHumans() }}</span>
                                     </div>
                                 </div>
                                 <span class="px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">

@@ -35,3 +35,5 @@ class AdminConsultantMessage extends Model
     }
 }
 
+
+

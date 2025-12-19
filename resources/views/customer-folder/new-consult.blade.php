@@ -17,155 +17,175 @@
                     </div>
                 </div>
 
-            <form class="space-y-6" method="POST" action="{{ route('customer.consultations.store') }}">
-                @csrf
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Consultant</label>
-                    <input type="hidden" name="consultant_id" id="consultant_id" value="{{ optional($selectedConsultant)->id }}">
-                    <div class="flex items-center gap-3 border border-blue-100 rounded-xl p-3 bg-blue-50/40 {{ $selectedConsultant ? '' : 'hidden' }} shadow-sm" id="selectedConsultant">
-                        <div class="h-12 w-12 rounded-full overflow-hidden bg-gray-200 ring-2 ring-blue-200">
-                            @if($selectedConsultant && $selectedConsultant->avatar_path)
-                                <img src="{{ asset('storage/'.$selectedConsultant->avatar_path) }}" id="selectedConsultantAvatar" class="h-full w-full object-cover" alt="">
-                            @else
-                                <div class="h-full w-full flex items-center justify-center text-gray-500 text-xl font-bold" id="selectedConsultantAvatar">
-                                    @if($selectedConsultant)
-                                        {{ substr(optional($selectedConsultant)->full_name, 0, 1) }}
-                                    @endif
-                                </div>
-                            @endif
-                        </div>
-                        <div class="flex-1">
-                            <div class="font-semibold text-gray-900" id="selectedConsultantName">{{ optional($selectedConsultant)->full_name }}</div>
-                            <div class="text-xs text-gray-600 mt-1" id="selectedConsultantExpertiseCount">
-                                @if($selectedConsultant)
-                                    @php
-                                        $expertiseList = optional($selectedConsultant)->expertise
-                                            ? array_filter(array_map('trim', explode(',', optional($selectedConsultant)->expertise)))
-                                            : [];
-                                    @endphp
-                                    @if(!empty($expertiseList))
-                                        {{ count($expertiseList) }} expertise area(s) available
-                                    @else
-                                        <span class="text-gray-500">No expertise listed</span>
-                                    @endif
-                                @endif
-                            </div>
-                            <div class="mt-1" id="selectedConsultantRating">
-                                @if($selectedConsultant && isset($selectedConsultant->average_rating) && $selectedConsultant->average_rating)
-                                    <div class="flex items-center">
-                                        @for($i = 1; $i <= 5; $i++)
-                                            @if($i <= round($selectedConsultant->average_rating))
-                                                <span class="text-yellow-500 text-xs">⭐</span>
-                                            @else
-                                                <span class="text-gray-300 text-xs">☆</span>
-                                            @endif
-                                        @endfor
-                                        <span class="ml-1 text-xs text-gray-500">{{ $selectedConsultant->average_rating }}/5</span>
-                                        @if($selectedConsultant->total_ratings > 0)
-                                            <span class="ml-1 text-xs text-gray-400">({{ $selectedConsultant->total_ratings }})</span>
+            @if(Auth::user()->isTrialExhausted())
+                <div class="text-center py-8">
+                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Free Trial Completed</h2>
+                    <p class="text-gray-600 mb-8 max-w-sm mx-auto">You have used your one-time free trial consultation. To continue booking sessions with our expert consultants, please upgrade your account.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center font-bold">
+                        <a href="{{ route('customer.plans') }}" class="px-8 py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition transform hover:-translate-y-0.5">
+                            View Pricing Plans
+                        </a>
+                        <a href="{{ route('customer.dashboard') }}" class="px-8 py-3 bg-white text-gray-700 rounded-xl shadow border border-gray-200 hover:bg-gray-50 transition">
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            @else
+                <form class="space-y-6" method="POST" action="{{ route('customer.consultations.store') }}">
+                    @csrf
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Consultant</label>
+                        <input type="hidden" name="consultant_id" id="consultant_id" value="{{ optional($selectedConsultant)->id }}">
+                        <div class="flex items-center gap-3 border border-blue-100 rounded-xl p-3 bg-blue-50/40 {{ $selectedConsultant ? '' : 'hidden' }} shadow-sm" id="selectedConsultant">
+                            <div class="h-12 w-12 rounded-full overflow-hidden bg-gray-200 ring-2 ring-blue-200">
+                                @if($selectedConsultant && $selectedConsultant->avatar_path)
+                                    <img src="{{ asset('storage/'.$selectedConsultant->avatar_path) }}" id="selectedConsultantAvatar" class="h-full w-full object-cover" alt="">
+                                @else
+                                    <div class="h-full w-full flex items-center justify-center text-gray-500 text-xl font-bold" id="selectedConsultantAvatar">
+                                        @if($selectedConsultant)
+                                            {{ substr(optional($selectedConsultant)->full_name, 0, 1) }}
                                         @endif
                                     </div>
-                                @else
-                                    <span class="text-xs text-gray-400">No ratings yet</span>
                                 @endif
                             </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-900" id="selectedConsultantName">{{ optional($selectedConsultant)->full_name }}</div>
+                                <div class="text-xs text-gray-600 mt-1" id="selectedConsultantExpertiseCount">
+                                    @if($selectedConsultant)
+                                        @php
+                                            $expertiseList = optional($selectedConsultant)->expertise
+                                                ? array_filter(array_map('trim', explode(',', optional($selectedConsultant)->expertise)))
+                                                : [];
+                                        @endphp
+                                        @if(!empty($expertiseList))
+                                            {{ count($expertiseList) }} expertise area(s) available
+                                        @else
+                                            <span class="text-gray-500">No expertise listed</span>
+                                        @endif
+                                    @endif
+                                </div>
+                                <div class="mt-1" id="selectedConsultantRating">
+                                    @if($selectedConsultant && isset($selectedConsultant->average_rating) && $selectedConsultant->average_rating)
+                                        <div class="flex items-center">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                @if($i <= round($selectedConsultant->average_rating))
+                                                    <span class="text-yellow-500 text-xs">⭐</span>
+                                                @else
+                                                    <span class="text-gray-300 text-xs">☆</span>
+                                                @endif
+                                            @endfor
+                                            <span class="ml-1 text-xs text-gray-500">{{ $selectedConsultant->average_rating }}/5</span>
+                                            @if($selectedConsultant->total_ratings > 0)
+                                                <span class="ml-1 text-xs text-gray-400">({{ $selectedConsultant->total_ratings }})</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-gray-400">No ratings yet</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <button type="button" onclick="showConsultantList()"
+                               class="ml-auto inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                                Change
+                            </button>
                         </div>
-                        <button type="button" onclick="showConsultantList()"
-                           class="ml-auto inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
-                            Change
+                        <div id="consultantListContainer" class="mt-2 hidden">
+                            <div class="mb-2">
+                                <input type="text" id="consultantSearch" placeholder="Search consultants..." 
+                                       class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       onkeyup="filterConsultantList()">
+                            </div>
+                            <div id="consultantList" class="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50"></div>
+                            <div id="consultantListLoading" class="text-center py-4 text-gray-500 text-sm">
+                                Loading consultants...
+                            </div>
+                        </div>
+                        @if(!$selectedConsultant)
+                            <div id="selectConsultantPrompt" class="mt-2">
+                                <p class="text-sm text-gray-600">
+                                    <button type="button" onclick="showConsultantList()" 
+                                            class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                        Browse and select a consultant
+                                    </button> to see their available expertise areas, or 
+                                    <a href="{{ route('customer.consultants') }}" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                        view all consultants
+                                    </a>
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+                    <div id="topicSection" class="{{ $selectedConsultant ? '' : 'hidden' }}">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Topic / Expertise <span class="text-red-500">*</span></label>
+                        <select name="topic" id="topic" 
+                               class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select a topic from consultant's expertise...</option>
+                            @if($selectedConsultant)
+                                @php
+                                    $expertiseList = optional($selectedConsultant)->expertise
+                                        ? array_filter(array_map('trim', explode(',', optional($selectedConsultant)->expertise)))
+                                        : [];
+                                @endphp
+                                @foreach($expertiseList as $expertise)
+                                    <option value="{{ $expertise }}">{{ $expertise }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Choose the expertise area you want to consult about</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Booking Request Details</label>
+                        <p class="text-xs text-gray-500 mb-2">Describe your consultation needs and requirements for this booking.</p>
+                        <textarea name="details" id="details"
+                                  class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                                  rows="4"
+                                  placeholder="Briefly describe your current situation, goals, and any important background information for this consultation."></textarea>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <strong>Note:</strong> After submitting this booking request, you can message the consultant separately through the chat system.
+                        </p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date <span class="text-red-500">*</span></label>
+                            <input name="preferred_date" id="preferred_date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}"
+                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('preferred_date') border-red-500 @enderror"
+                                   required />
+                            @error('preferred_date')
+                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">Minimum date is tomorrow (24 hours from now)</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time <span class="text-red-500">*</span></label>
+                            <input name="preferred_time" id="preferred_time" type="time"
+                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('preferred_time') border-red-500 @enderror"
+                                   required />
+                            @error('preferred_time')
+                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="submit"
+                                class="flex-1 sm:flex-initial inline-flex items-center justify-center bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-blue-700 transition-colors {{ $selectedConsultant ? '' : 'opacity-50 cursor-not-allowed' }}"
+                                {{ $selectedConsultant ? '' : 'disabled' }}>
+                            Submit Request
+                        </button>
+                        <button type="button" id="cancelButton" onclick="resetForm()"
+                                class="flex-1 sm:flex-initial inline-flex items-center justify-center bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-gray-300 transition-colors {{ $selectedConsultant ? '' : 'hidden' }}">
+                            Cancel / Clear All
                         </button>
                     </div>
-                    <div id="consultantListContainer" class="mt-2 hidden">
-                        <div class="mb-2">
-                            <input type="text" id="consultantSearch" placeholder="Search consultants..." 
-                                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                   onkeyup="filterConsultantList()">
-                        </div>
-                        <div id="consultantList" class="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50"></div>
-                        <div id="consultantListLoading" class="text-center py-4 text-gray-500 text-sm">
-                            Loading consultants...
-                        </div>
-                    </div>
-                    @if(!$selectedConsultant)
-                        <div id="selectConsultantPrompt" class="mt-2">
-                            <p class="text-sm text-gray-600">
-                                <button type="button" onclick="showConsultantList()" 
-                                        class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
-                                    Browse and select a consultant
-                                </button> to see their available expertise areas, or 
-                                <a href="{{ route('customer.consultants') }}" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
-                                    view all consultants
-                                </a>
-                            </p>
-                        </div>
-                    @endif
-                </div>
-                <div id="topicSection" class="{{ $selectedConsultant ? '' : 'hidden' }}">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Topic / Expertise <span class="text-red-500">*</span></label>
-                    <select name="topic" id="topic" 
-                           class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                           required>
-                        <option value="">Select a topic from consultant's expertise...</option>
-                        @if($selectedConsultant)
-                            @php
-                                $expertiseList = optional($selectedConsultant)->expertise
-                                    ? array_filter(array_map('trim', explode(',', optional($selectedConsultant)->expertise)))
-                                    : [];
-                            @endphp
-                            @foreach($expertiseList as $expertise)
-                                <option value="{{ $expertise }}">{{ $expertise }}</option>
-                            @endforeach
-                        @endif
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">Choose the expertise area you want to consult about</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Booking Request Details</label>
-                    <p class="text-xs text-gray-500 mb-2">Describe your consultation needs and requirements for this booking.</p>
-                    <textarea name="details" id="details"
-                              class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
-                              rows="4"
-                              placeholder="Briefly describe your current situation, goals, and any important background information for this consultation."></textarea>
-                    <p class="text-xs text-gray-500 mt-2">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <strong>Note:</strong> After submitting this booking request, you can message the consultant separately through the chat system.
-                    </p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Date <span class="text-red-500">*</span></label>
-                        <input name="preferred_date" id="preferred_date" type="date" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}"
-                               class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('preferred_date') border-red-500 @enderror"
-                               required />
-                        @error('preferred_date')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                        <p class="text-xs text-gray-500 mt-1">Minimum date is tomorrow (24 hours from now)</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Preferred Time <span class="text-red-500">*</span></label>
-                        <input name="preferred_time" id="preferred_time" type="time"
-                               class="w-full border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('preferred_time') border-red-500 @enderror"
-                               required />
-                        @error('preferred_time')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="pt-2 flex gap-3">
-                    <button type="submit"
-                            class="flex-1 sm:flex-initial inline-flex items-center justify-center bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-blue-700 transition-colors">
-                        Submit Request
-                    </button>
-                    <button type="button" id="cancelButton" onclick="resetForm()"
-                            class="flex-1 sm:flex-initial inline-flex items-center justify-center bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-gray-300 transition-colors {{ $selectedConsultant ? '' : 'hidden' }}">
-                        Cancel / Clear All
-                    </button>
-                </div>
-            </form>
+                </form>
+            @endif
             </div>
         </div>
 @endsection
@@ -246,7 +266,16 @@ function clearConsultant() {
     selectedConsultantDiv.classList.add('hidden');
     topicSection.classList.add('hidden');
     topicSelect.value = '';
-    selectConsultantPrompt.classList.add('hidden');
+    topicSelect.required = false;
+    
+    // Update submit button state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
+    selectConsultantPrompt.classList.remove('hidden');
     // Show consultant list container and load consultants
     const consultantListContainer = document.getElementById('consultantListContainer');
     const consultantSearch = document.getElementById('consultantSearch');
@@ -419,12 +448,21 @@ function selectConsultant(consultant) {
     
     selectedConsultantDiv.classList.remove('hidden');
     topicSection.classList.remove('hidden');
+    topicSelect.required = true;
+    
     const consultantListContainer = document.getElementById('consultantListContainer');
     if (consultantListContainer) {
         consultantListContainer.classList.add('hidden');
     }
     selectConsultantPrompt.classList.add('hidden');
     
+    // Update submit button state
+    const submitBtn = document.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
     // Show cancel button when consultant is selected
     checkFormState();
 }

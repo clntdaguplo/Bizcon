@@ -115,6 +115,7 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-2 space-x-2">
+                                    @if(auth()->user()->hasSubscriptionFeature('view_consultation_details'))
                                     <a href="{{ route('customer.consultations.show', $consultation->id) }}" 
                                        class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors border border-blue-200 hover:border-blue-300">
                                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,6 +124,9 @@
                                         </svg>
                                         View Details
                                     </a>
+                                    @else
+                                    <span class="text-xs text-gray-400 font-bold uppercase italic">Locked</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -178,9 +182,9 @@
                 // Future consultation - countdown
                 label = 'Time Remaining';
                 if (days > 0) {
-                    timeString = `${days}d ${hours}h`;
+                    timeString = `${days}d ${hours}h ${minutes}m ${seconds}s`;
                 } else if (hours > 0) {
-                    timeString = `${hours}h ${minutes}m`;
+                    timeString = `${hours}h ${minutes}m ${seconds}s`;
                 } else if (minutes > 0) {
                     timeString = `${minutes}m ${seconds}s`;
                 } else {
@@ -191,11 +195,11 @@
                 // Past consultation - elapsed time
                 label = 'Time Elapsed';
                 if (days > 0) {
-                    timeString = `${days}d ${hours}h ago`;
+                    timeString = `${days}d ${hours}h ${minutes}m ${seconds}s ago`;
                 } else if (hours > 0) {
-                    timeString = `${hours}h ${minutes}m ago`;
+                    timeString = `${hours}h ${minutes}m ${seconds}s ago`;
                 } else if (minutes > 0) {
-                    timeString = `${minutes}m ago`;
+                    timeString = `${minutes}m ${seconds}s ago`;
                 } else {
                     timeString = `${seconds}s ago`;
                 }

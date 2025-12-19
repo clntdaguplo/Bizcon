@@ -30,57 +30,23 @@ class ConsultationController extends Controller
             'preferred_time.required' => 'Please select a preferred time for the consultation.',
         ]);
 
-        // Subscription gating: block if no plan, trial expired/used, or pro pending/rejected/expired
-        $activeSubscription = null;
-        if (Schema::hasTable('subscriptions')) {
-            $activeSubscription = Subscription::where('user_id', Auth::id())
-                ->orderByDesc('created_at')
-                ->first();
+        // Subscription gating: block if no plan or inactive
+        $activeSubscription = \App\Services\SubscriptionService::getActiveSubscription(Auth::user());
 
-            if (!$activeSubscription) {
-                return back()
-                    ->withErrors(['error' => 'Please choose a plan (Free Trial or Subscription) to book consultations.'])
-                    ->withInput();
-            }
-
-            // Block if pro payment was rejected
-            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->payment_status === 'rejected') {
-                return back()
-                    ->withErrors(['error' => 'Your payment was rejected. Please submit a new payment to continue.'])
-                    ->withInput();
-            }
-
-            // Block if pro payment is still pending
-            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->payment_status === 'pending') {
-                return back()
-                    ->withErrors(['error' => 'Your subscription payment is pending. Please wait for approval to book consultations.'])
-                    ->withInput();
-            }
-
-            // Block if pro subscription expired
-            if ($activeSubscription->plan_type === 'pro' && $activeSubscription->expires_at && now()->greaterThanOrEqualTo($activeSubscription->expires_at)) {
-                $activeSubscription->status = 'expired';
-                $activeSubscription->save();
-                return back()
-                    ->withErrors(['error' => 'Your subscription has expired. Please renew to continue booking consultations.'])
-                    ->withInput();
-            }
-
-            // Free trial checks
-            if ($activeSubscription->plan_type === 'free_trial') {
-                $expired = ($activeSubscription->expires_at && now()->greaterThanOrEqualTo($activeSubscription->expires_at))
-                    || ($activeSubscription->minutes_total ?? 0) <= ($activeSubscription->minutes_used ?? 0);
-                if ($expired) {
-                    $activeSubscription->status = 'expired';
-                    $activeSubscription->minutes_used = $activeSubscription->minutes_total ?? 20;
-                    $activeSubscription->save();
-
-                    return back()
-                        ->withErrors(['error' => 'Your free trial has been used. Upgrade to Pro to book another consultation.'])
-                        ->withInput();
-                }
-            }
+        if (!$activeSubscription) {
+            return back()
+                ->withErrors(['error' => 'Please choose a plan to book consultations.'])
+                ->withInput();
         }
+
+        // Subscription limits check
+        $eligibility = \App\Services\SubscriptionService::checkConsultationEligibility(Auth::user(), $validated['preferred_date']);
+        if (!$eligibility['allowed']) {
+            return back()
+                ->withErrors(['error' => $eligibility['reason']])
+                ->withInput();
+        }
+
 
         $consultation = Consultation::create([
             'customer_id' => Auth::id(),
@@ -92,10 +58,12 @@ class ConsultationController extends Controller
             'status' => 'Pending',
         ]);
 
-        // Consume free trial on booking
-        if ($activeSubscription && $activeSubscription->plan_type === 'free_trial') {
-            $activeSubscription->minutes_used = $activeSubscription->minutes_total ?? 20;
-            $activeSubscription->status = 'expired';
+        // Consume minutes if applicable
+        if ($activeSubscription && $activeSubscription->minutes_total > 0) {
+            $activeSubscription->minutes_used += 20; // Default increment
+            if ($activeSubscription->minutes_used >= $activeSubscription->minutes_total) {
+                $activeSubscription->status = 'expired';
+            }
             $activeSubscription->save();
         }
 
@@ -106,7 +74,7 @@ class ConsultationController extends Controller
             $preferredTimeText = \Carbon\Carbon::parse($validated['preferred_time'])->format('g:i A');
             
             $trialNote = '';
-            if ($activeSubscription && $activeSubscription->plan_type === 'free_trial') {
+            if ($activeSubscription && $activeSubscription->plan_type === 'Free') {
                 $trialNote = "\n\nNote: Free trial valid only 20 minutes.";
             }
             
@@ -121,6 +89,10 @@ class ConsultationController extends Controller
                 ($validated['details'] ? "Details: " . \Illuminate\Support\Str::limit($validated['details'], 200) : '') .
                 $trialNote
             );
+        }
+
+        if (Auth::user()->isTrialExhausted()) {
+            return redirect()->route('customer.plans')->with('success', 'Consultation request submitted successfully! Your free trial has now been used — please upgrade to continue.');
         }
 
         return redirect()->route('customer.my-consults')->with('success', 'Consultation request submitted.');
@@ -229,6 +201,11 @@ class ConsultationController extends Controller
         // Only allow completing if status is Accepted
         if ($consultation->status !== 'Accepted') {
             return back()->withErrors(['error' => 'You can only complete consultations that are Accepted.']);
+        }
+
+        // Only allow completing on the scheduled date
+        if (!\Carbon\Carbon::parse($consultation->scheduled_date)->isToday()) {
+            return back()->withErrors(['error' => 'You can only mark this consultation as completed on the scheduled date (' . \Carbon\Carbon::parse($consultation->scheduled_date)->format('M j, Y') . ').']);
         }
         
         $consultation->status = 'Completed';
@@ -480,9 +457,6 @@ class ConsultationController extends Controller
         }
         
         $consultation = $query->findOrFail($id);
-        
-        // Auto-expire if needed
-        $consultation->markExpiredIfPastPreferredDate();
 
         return view('customer-folder.consultation-details', compact('consultation'));
     }
@@ -663,6 +637,12 @@ class ConsultationController extends Controller
             return back()->withErrors(['error' => 'You can only create reports for completed consultations.']);
         }
 
+        // Restrict report creation for Free tier customers
+        if (!$consultation->customer->hasSubscriptionFeature('report_export')) {
+            return redirect()->route('consultant.consultations')
+                ->with('error', 'Detailed reports are restricted for Free Trial users. The customer must upgrade to a paid plan to unlock this feature.');
+        }
+
         return view('consultant-folder.create-report', compact('consultation'));
     }
 
@@ -683,6 +663,11 @@ class ConsultationController extends Controller
 
         if ($consultation->status !== 'Completed') {
             return back()->withErrors(['error' => 'You can only create reports for completed consultations.']);
+        }
+
+        // Restrict report creation for Free tier customers
+        if (!$consultation->customer->hasSubscriptionFeature('report_export')) {
+            return back()->withErrors(['error' => 'Detailed reports are restricted for Free Trial users. The customer must upgrade to a paid plan to unlock this feature.']);
         }
 
         $consultation->consultation_summary = $request->consultation_summary;
@@ -733,6 +718,12 @@ class ConsultationController extends Controller
             abort(403, 'Unauthorized access to this report.');
         }
 
+        // Subscription check for report export
+        if (Auth::user()->role === 'Customer' && !Auth::user()->hasSubscriptionFeature('report_export')) {
+            return redirect()->route('customer.my-consults')
+                ->with('error', 'Report export/viewing is not available in the Free Subscription. Please upgrade to Weekly, Quarterly, or Annual.');
+        }
+
         if (!$consultation->consultation_summary) {
             return back()->withErrors(['error' => 'Report not yet created for this consultation.']);
         }
@@ -772,6 +763,12 @@ class ConsultationController extends Controller
 
         if ($consultation->status !== 'Completed') {
             return back()->withErrors(['error' => 'You can only rate completed consultations.']);
+        }
+
+        // Subscription check for rating
+        if ($isCustomer && !Auth::user()->hasSubscriptionFeature('rating')) {
+            return redirect()->route('customer.my-consults')
+                ->with('error', 'Rating and feedback features are not available in the Free Subscription. Please upgrade to Weekly, Quarterly, or Annual.');
         }
 
         $raterType = $isCustomer ? 'customer' : 'consultant';

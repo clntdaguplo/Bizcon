@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Route middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureUserRole::class,
+            'trial_access' => \App\Http\Middleware\CheckTrialAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

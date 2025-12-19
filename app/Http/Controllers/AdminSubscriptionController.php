@@ -14,13 +14,13 @@ class AdminSubscriptionController extends Controller
         $filter = $request->get('status', 'all'); // all|approved|rejected
 
         $pending = Subscription::with('user')
-            ->where('plan_type', 'pro')
+            ->where('plan_type', '!=', 'Free')
             ->where('payment_status', 'pending')
             ->orderByDesc('created_at')
             ->get();
 
         $recent = Subscription::with('user')
-            ->where('plan_type', 'pro')
+            ->where('plan_type', '!=', 'Free')
             ->whereIn('payment_status', ['approved', 'rejected'])
             ->when($filter !== 'all', function ($q) use ($filter) {
                 $q->where('payment_status', $filter);
@@ -39,7 +39,19 @@ class AdminSubscriptionController extends Controller
         $subscription->status = 'active';
         $subscription->approved_at = now();
         $subscription->approved_by = Auth::id();
-        $subscription->expires_at = now()->addDays(30);
+        
+        $limits = \App\Services\SubscriptionService::getTierLimits($subscription->plan_type);
+        $subscription->price = $limits['price'] ?? 0;
+        
+        // Determine expiration duration
+        $days = match($subscription->plan_type) {
+            'Weekly' => 7,
+            'Quarterly' => 90,
+            'Annual' => 365,
+            default => 30
+        };
+        
+        $subscription->expires_at = now()->addDays($days);
         $subscription->save();
 
         // Send approval notification to customer
@@ -48,7 +60,7 @@ class AdminSubscriptionController extends Controller
             'user_id' => $subscription->user_id,
             'type' => 'payment_approved',
             'title' => 'Payment Approved',
-            'message' => 'Your subscription payment has been approved! You can now book consultations for 30 days.',
+            'message' => 'Your ' . $subscription->plan_type . ' subscription payment has been approved! Your benefits are now active.',
             'is_read' => false,
             'sent_at' => now(),
         ]);
@@ -78,4 +90,6 @@ class AdminSubscriptionController extends Controller
         return back()->with('success', 'Payment rejected.');
     }
 }
+
+
 

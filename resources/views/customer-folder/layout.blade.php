@@ -12,9 +12,24 @@
         <!-- Sidebar -->
         <div class="w-64 bg-gray-900 text-white flex flex-col">
             <div class="p-6 border-b border-gray-700">
-                <a href="{{ route('dashboard.customer') }}" class="flex items-center">
-                    <img src="{{ asset('images/Bizcon.png') }}" alt="Biz Consult Logo" class="h-10 w-auto">
-                    <span class="ml-3 text-xl font-bold">Customer</span>
+                <a href="{{ route('dashboard.customer') }}" class="flex flex-col items-center">
+                    <img src="{{ asset('images/Bizcon.png') }}" alt="Biz Consult Logo" class="h-10 w-auto mb-2">
+                    <div class="flex flex-col items-center">
+                        <span class="text-xl font-bold">Customer</span>
+                        @php
+                            $tier = Auth::user()->getSubscriptionTier();
+                            $tierColor = match($tier) {
+                                'Free' => 'text-gray-400 bg-gray-800',
+                                'Weekly' => 'text-blue-400 bg-blue-900/50',
+                                'Quarterly' => 'text-purple-400 bg-purple-900/50',
+                                'Annual' => 'text-amber-400 bg-amber-900/50',
+                                default => 'text-gray-500'
+                            };
+                        @endphp
+                        <span class="mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest border border-current {{ $tierColor }}">
+                            {{ $tier }} Plan
+                        </span>
+                    </div>
                 </a>
             </div>
 
@@ -121,7 +136,31 @@
 
             <main class="flex-1 overflow-y-auto p-6">
                 @if(session('success'))
-                    <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">{{ session('success') }}</div>
+                    <div class="mb-6 p-4 bg-green-100 text-green-800 rounded-lg border border-green-200 shadow-sm flex items-center">
+                        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="mb-6 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200 shadow-sm flex items-center font-bold">
+                        <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                @if($errors->any())
+                    <div class="mb-6 p-4 bg-red-100 text-red-800 rounded-lg border border-red-200 shadow-sm font-bold">
+                        <div class="flex items-center mb-2">
+                            <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                            <span>There were some issues with your request:</span>
+                        </div>
+                        <ul class="list-disc list-inside ml-8 text-sm">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
                 @endif
                 @yield('content')
             </main>
